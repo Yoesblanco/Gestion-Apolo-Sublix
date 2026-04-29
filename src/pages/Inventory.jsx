@@ -12,10 +12,13 @@ import {
   Hash,
   Banknote,
   AlertTriangle,
-  Clock
+  Clock,
+  PlusCircle,
+  Edit
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext, formatUSD } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
+import { formatUSD } from '../utils/formatters';
 import './Inventory.css';
 
 const Inventory = () => {
@@ -29,6 +32,15 @@ const Inventory = () => {
     price: ''
   });
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [stockToAdd, setStockToAdd] = useState('');
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    category: 'Sublimación',
+    price: ''
+  });
 
   const handleAddProduct = (e) => {
     e.preventDefault();
@@ -63,8 +75,77 @@ const Inventory = () => {
   };
 
   const handleDeleteProduct = (id) => {
-    if (window.confirm('¿Deseas eliminar este producto del inventario?')) {
+    const productToDelete = products.find(p => p.id === id);
+    if (!productToDelete) return;
+
+    if (window.confirm(`¿Deseas eliminar "${productToDelete.name}" del inventario? Se borrará también su historial de movimientos.`)) {
       setProducts(products.filter(p => p.id !== id));
+      setStockHistory(prev => (prev || []).filter(h => h.productName !== productToDelete.name));
+    }
+  };
+
+  const handleUpdateStock = (e) => {
+    e.preventDefault();
+    if (!selectedProduct || !stockToAdd) return;
+
+    const addedQty = parseInt(stockToAdd);
+    const newStock = selectedProduct.stock + addedQty;
+
+    const historyEntry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      type: 'Entrada',
+      productName: selectedProduct.name,
+      customer: 'Reposición de Mercancía',
+      quantity: addedQty,
+      orderId: 'N/A',
+      notes: 'Llegada de nueva mercancía'
+    };
+
+    const updatedProducts = products.map(p => {
+      if (p.id === selectedProduct.id) {
+        return {
+          ...p,
+          stock: newStock,
+          status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
+        };
+      }
+      return p;
+    });
+
+    setProducts(updatedProducts);
+    setStockHistory(prev => [historyEntry, ...(prev || [])]);
+    setStockModalOpen(false);
+    setStockToAdd('');
+    setSelectedProduct(null);
+  };
+
+  const handleEditProduct = (e) => {
+    e.preventDefault();
+    if (!selectedProduct || !editFormData.name || !editFormData.price) return;
+
+    const updatedProducts = products.map(p => {
+      if (p.id === selectedProduct.id) {
+        return {
+          ...p,
+          name: editFormData.name,
+          category: editFormData.category,
+          price: parseFloat(editFormData.price)
+        };
+      }
+      return p;
+    });
+
+    setProducts(updatedProducts);
+    setEditModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const handleCleanupHistory = () => {
+    if (window.confirm('¿Deseas eliminar del historial todos los registros de productos que ya no existen en el inventario?')) {
+      const activeProductNames = products.map(p => p.name);
+      setStockHistory(prev => (prev || []).filter(h => activeProductNames.includes(h.productName)));
+      alert('Historial depurado con éxito.');
     }
   };
 
@@ -196,11 +277,33 @@ const Inventory = () => {
                   </td>
                   <td>
                     <div className="inv-actions">
+                      <button 
+                        className="inv-edit-btn" 
+                        onClick={() => {
+                          setSelectedProduct(p);
+                          setEditFormData({
+                            name: p.name,
+                            category: p.category,
+                            price: p.price
+                          });
+                          setEditModalOpen(true);
+                        }} 
+                        title="Editar Producto"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button 
+                        className="inv-add-stock-btn" 
+                        onClick={() => {
+                          setSelectedProduct(p);
+                          setStockModalOpen(true);
+                        }} 
+                        title="Agregar Stock"
+                      >
+                        <PlusCircle size={18} />
+                      </button>
                       <button className="inv-delete-btn" onClick={() => handleDeleteProduct(p.id)} title="Eliminar">
                         <Trash2 size={18} />
-                      </button>
-                      <button className="action-btn" title="Opciones">
-                        <MoreVertical size={18} />
                       </button>
                     </div>
                   </td>
@@ -219,9 +322,28 @@ const Inventory = () => {
                 <Clock size={20} className="text-primary" />
                 Historial Global de Movimientos
               </h3>
-              <button className="close-btn" onClick={() => setHistoryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {stockHistory && stockHistory.length > 0 && (
+                  <button 
+                    onClick={handleCleanupHistory}
+                    style={{ 
+                      background: 'rgba(239, 68, 68, 0.1)', 
+                      color: 'var(--danger)', 
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Depurar Historial
+                  </button>
+                )}
+                <button className="close-btn" onClick={() => setHistoryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                  <X size={24} />
+                </button>
+              </div>
             </div>
             <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
               {(!stockHistory || stockHistory.length === 0) ? (
@@ -265,6 +387,95 @@ const Inventory = () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {stockModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setStockModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Agregar Stock</h3>
+              <button className="close-btn" onClick={() => setStockModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '20px', fontSize: '0.9rem', opacity: 0.8 }}>
+                Ingresa la cantidad de <strong>{selectedProduct?.name}</strong> que ha llegado al inventario.
+              </p>
+              <form onSubmit={handleUpdateStock}>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label><Hash size={14} /> Cantidad a sumar</label>
+                  <input 
+                    type="number" 
+                    required 
+                    autoFocus
+                    placeholder="0" 
+                    value={stockToAdd}
+                    onChange={(e) => setStockToAdd(e.target.value)}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  />
+                </div>
+                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Confirmar Entrada
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {editModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setEditModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '450px' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Editar Detalles del Producto</h3>
+              <button className="close-btn" onClick={() => setEditModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleEditProduct}>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label><Package size={14} /> Nombre del Producto</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label><Tag size={14} /> Categoría</label>
+                  <select
+                    value={editFormData.category}
+                    onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  >
+                    <option value="Sublimación">Sublimación</option>
+                    <option value="Textil">Textil</option>
+                    <option value="Papelería">Papelería</option>
+                    <option value="Vinilo">Vinilo</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label><Banknote size={14} /> Precio Unitario ($)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required 
+                    value={editFormData.price}
+                    onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  />
+                </div>
+                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Guardar Cambios
+                </button>
+              </form>
             </div>
           </div>
         </div>

@@ -7,7 +7,7 @@ import './Login.css';
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,7 +16,7 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.identifier, formData.password);
     
     if (result.success) {
       navigate('/');
@@ -46,15 +46,15 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label><User size={14} /> Correo Electrónico</label>
+            <label><User size={14} /> Usuario o Correo</label>
             <div className="input-with-icon">
               <LogIn size={18} className="input-icon" />
               <input 
-                type="email" 
-                placeholder="admin@apolosublix.com"
+                type="text" 
+                placeholder="admin o admin@apolosublix.com"
                 required
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                value={formData.identifier}
+                onChange={(e) => setFormData({...formData, identifier: e.target.value})}
               />
             </div>
           </div>

@@ -149,26 +149,46 @@
 
 .to-buy-actions {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
+  gap: 0.5rem;
 }
 
-.delete-btn-table {
+.bought-btn, .delete-btn-table, .edit-btn-table {
   background: transparent;
   border: none;
-  color: var(--text-muted);
   cursor: pointer;
   padding: 8px;
-  border-radius: 8px;
-  transition: all 0.2s;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
+}
+
+.bought-btn {
+  color: var(--text-muted);
+}
+
+.bought-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent);
+}
+
+.edit-btn-table {
+  color: var(--text-muted);
+}
+
+.edit-btn-table:hover {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--primary);
+}
+
+.delete-btn-table {
+  color: var(--text-muted);
 }
 
 .delete-btn-table:hover {
-  background: rgba(255, 62, 108, 0.1);
-  color: var(--primary-color);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
 }
 
 .empty-table-msg {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext, formatUSD } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
+import { formatUSD } from '../utils/formatters';
 import { 
   Wallet,
   Banknote,
@@ -43,7 +44,7 @@ const Sales = () => {
 
     const newTx = {
       id: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toLocaleString(),
+      date: new Date().toISOString(),
       product: formData.product,
       amount: typeof formData.amount === 'string' ? parseFloat(formData.amount.replace(',', '.')) : parseFloat(formData.amount),
       method: formData.method,
@@ -256,7 +257,7 @@ const Sales = () => {
                 filteredTransactions.map((tx) => (
                   <tr key={tx.id}>
                     <td className="tx-id">{tx.id}</td>
-                    <td className="tx-date">{tx.date}</td>
+                    <td className="tx-date">{new Date(tx.date).toLocaleDateString()}</td>
                     <td>{tx.product}</td>
                     <td>
                       <span className={`type-badge ${tx.type}`}>

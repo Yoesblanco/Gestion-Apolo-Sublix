@@ -11,6 +11,7 @@ import { AppProvider } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Settings from './pages/Settings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,7 @@ function App() {
                     <Route path="/ventas" element={<Sales />} />
                     <Route path="/por-comprar" element={<ToBuy />} />
                     <Route path="/clientes" element={<Customers />} />
+                    <Route path="/configuracion" element={<Settings />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

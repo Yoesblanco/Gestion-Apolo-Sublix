@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import { useAppContext, formatUSD } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { formatUSD } from '../utils/formatters';
 import { 
   TrendingUp, 
   Package, 
@@ -7,136 +9,207 @@ import {
   Wallet,
   ShoppingBag,
   ArrowRight,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Clock,
+  CheckCircle,
+  FileText
 } from 'lucide-react';
 import './Dashboard.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { salesTotals, products, customers, orders, transactions } = useAppContext();
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '¡Buenos días';
+    if (hour < 18) return '¡Buenas tardes';
+    return '¡Buenas noches';
+  }, []);
+
   const stats = [
-    { label: 'Total Actual', value: `$${formatUSD(salesTotals.total)}`, icon: Wallet, color: '#0ea5e9' },
-    { label: 'Productos', value: products.length.toString(), icon: Package, color: '#10b981' },
-    { label: 'Clientes', value: customers.length.toString(), icon: Users, color: '#f59e0b' },
-    { label: 'Pedidos Activos', value: orders.filter(o => o.status === 'Pendiente').length.toString(), icon: ShoppingBag, color: '#8b5cf6' },
+    { label: 'Balance Total', sub: 'Dinero en caja', value: `$${formatUSD(salesTotals.total)}`, icon: Wallet, color: '#0ea5e9', path: '/ventas' },
+    { label: 'Inventario', sub: 'Productos registrados', value: products.length.toString(), icon: Package, color: '#10b981', path: '/inventario' },
+    { label: 'Clientes', sub: 'Base de datos', value: customers.length.toString(), icon: Users, color: '#f59e0b', path: '/clientes' },
+    { label: 'Pedidos', sub: 'Pendientes por entregar', value: (orders || []).filter(o => o && (o.status || 'Pendiente') !== 'Entregado').length.toString(), icon: ShoppingBag, color: '#8b5cf6', path: '/pedidos' },
   ];
 
-  // Logic for the chart: Group by date (last 7 days)
+
+  const upcomingOrders = useMemo(() => {
+    return (orders || [])
+      .filter(o => o && (o.status || 'Pendiente') !== 'Entregado')
+      .sort((a, b) => new Date(a?.deliveryDate || 0) - new Date(b?.deliveryDate || 0))
+      .slice(0, 3);
+  }, [orders]);
+
+  const recentTransactions = (transactions || []).slice(0, 5);
+
   const chartData = useMemo(() => {
-    const days = [...Array(7)].map((_, i) => {
+    // 1. Crear un mapa para acceso rápido por fecha (YYYY-MM-DD)
+    const dataMap = {};
+    
+    // 2. Generar las claves de los últimos 7 días
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toLocaleDateString();
-    }).reverse();
+      const key = d.toISOString().split('T')[0];
+      days.push({ key, dateObj: d });
+      dataMap[key] = { ingresos: 0, egresos: 0 };
+    }
 
-    return days.map(day => {
-      const dayTxs = transactions.filter(t => t.date.split(',')[0] === day);
-      const ingresos = dayTxs.filter(t => t.type === 'ingreso').reduce((acc, curr) => acc + curr.amount, 0);
-      const egresos = dayTxs.filter(t => t.type === 'egreso').reduce((acc, curr) => acc + curr.amount, 0);
-      return { day, ingresos, egresos };
+    // 3. Procesar transacciones una sola vez (O(n))
+    (transactions || []).forEach(t => {
+      if (!t?.date) return;
+      try {
+        let dateStr = "";
+        
+        if (typeof t.date === 'string') {
+          // Si ya es ISO (contiene T), cortamos en la T
+          if (t.date.includes('T')) {
+            dateStr = t.date.split('T')[0];
+          } else {
+            // Intentamos parsear formatos como DD/MM/YYYY o YYYY-MM-DD
+            const parts = t.date.split(/[\/\-,\s]+/);
+            if (parts.length >= 3) {
+              // Asumimos YYYY-MM-DD si la primera parte es de 4 dígitos, si no DD/MM/YYYY
+              if (parts[0].length === 4) dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+              else dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
+        } else if (t.date instanceof Date) {
+          dateStr = t.date.toISOString().split('T')[0];
+        }
+
+        if (dataMap[dateStr]) {
+          const amt = Number(t.amount) || 0;
+          if (t.type?.toLowerCase() === 'ingreso') dataMap[dateStr].ingresos += amt;
+          else if (t.type?.toLowerCase() === 'egreso') dataMap[dateStr].egresos += amt;
+        }
+      } catch (e) { /* Ignorar fallos de parseo en registros corruptos */ }
     });
+
+    // 4. Convertir mapa a arreglo para la gráfica
+    return days.map(d => ({
+      day: d.dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }),
+      ingresos: dataMap[d.key].ingresos,
+      egresos: dataMap[d.key].egresos
+    }));
   }, [transactions]);
 
-  const maxVal = Math.max(...chartData.map(d => Math.max(d.ingresos, d.egresos)), 100);
+  const maxVal = useMemo(() => {
+    const vals = chartData.map(d => Math.max(d.ingresos, d.egresos));
+    return Math.max(...vals, 10);
+  }, [chartData]);
 
-  const recentTransactions = transactions.slice(0, 5);
-
-  const expiringOrders = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const inTwoDays = new Date(today);
-    inTwoDays.setDate(today.getDate() + 2);
-
-    return orders.filter(order => {
-      if (order.status !== 'Pendiente') return false;
-      if (!order.deliveryDate) return false;
-      
-      const delivery = new Date(order.deliveryDate);
-      return delivery >= today && delivery <= inTwoDays;
-    });
-  }, [orders]);
+  const hasData = chartData.some(d => d.ingresos > 0 || d.egresos > 0);
 
   return (
     <div className="dashboard animate-fade-in">
-      {expiringOrders.length > 0 && (
-        <div className="alert-banner warning glass" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-          <AlertTriangle size={24} color="#f59e0b" />
-          <div>
-            <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1.1rem' }}>¡Atención! Pedidos por vencer</h4>
-            <p style={{ margin: '4px 0 0', opacity: 0.9 }}>
-              Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto:{' '}
-              {expiringOrders.map(o => `${o.quantity} unds de ${o.productName} (${o.customer})`).join(', ')}.
-            </p>
-          </div>
+      {/* Welcome Header */}
+      <div className="welcome-header">
+        <div className="welcome-text">
+          <h1>{greeting}, {user?.name?.split(' ')[0] || 'Administrador'}!</h1>
+          <p>Esto es lo que está pasando en <span>{user?.businessName || 'Apolo Sublix'}</span> hoy.</p>
         </div>
-      )}
+        <div className="quick-actions-bar">
+          <button className="action-btn primary" onClick={() => navigate('/pedidos')}>
+            <Plus size={18} /> Nuevo Pedido
+          </button>
+        </div>
+      </div>
 
       <div className="stats-grid">
         {stats.map((stat, i) => (
-          <div key={i} className="stat-card glass">
+          <div 
+            key={i} 
+            className="stat-card glass clickable-card" 
+            onClick={() => navigate(stat.path)}
+            style={{ '--accent-color': stat.color }}
+          >
             <div className="stat-info">
               <span className="stat-label">{stat.label}</span>
               <span className="stat-value">{stat.value}</span>
+              <span className="stat-sub">{stat.sub}</span>
             </div>
             <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
               <stat.icon size={24} />
             </div>
+            <div className="card-glow"></div>
           </div>
         ))}
       </div>
 
-      <div className="dashboard-grid">
-        <div className="chart-container glass">
-          <div className="section-header-row">
-            <h3>Ingresos vs Egresos (Últimos 7 días)</h3>
-            <div className="chart-legend">
-              <span className="legend-item"><span className="dot income"></span> Ingresos</span>
-              <span className="legend-item"><span className="dot expense"></span> Egresos</span>
+      <div className="dashboard-main-grid">
+        <div className="main-content-row">
+          {/* Gráfica de Evolución Temporal (Grande) */}
+          <div className="dashboard-card glass evolution-chart-section">
+            <div className="section-header-row">
+              <div className="header-titles">
+                <h3>Evolución Semanal</h3>
+              </div>
+              <div className="chart-legend-large">
+                <div className="legend-item"><span className="dot income"></span> Ingresos</div>
+                <div className="legend-item"><span className="dot expense"></span> Egresos</div>
+              </div>
+            </div>
+            
+            <div className="main-chart-container">
+              {!hasData ? (
+                <div className="empty-chart-msg">
+                  <Clock size={40} opacity={0.2} />
+                  <p>Sin movimientos</p>
+                </div>
+              ) : (
+                <div className="evolution-bars">
+                  {chartData.map((data, i) => (
+                    <div key={i} className="evolution-column">
+                      <div className="evolution-bar-group">
+                        <div 
+                          className="evo-bar income" 
+                          style={{ height: `${(data.ingresos / maxVal) * 100}%` }}
+                        >
+                          {data.ingresos > 0 && <span className="evo-tooltip">${formatUSD(data.ingresos)}</span>}
+                        </div>
+                        <div 
+                          className="evo-bar expense" 
+                          style={{ height: `${(data.egresos / maxVal) * 100}%` }}
+                        >
+                          {data.egresos > 0 && <span className="evo-tooltip">-${formatUSD(data.egresos)}</span>}
+                        </div>
+                      </div>
+                      <span className="evo-label">{data.day}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-          <div className="placeholder-chart">
-            {chartData.map((data, i) => (
-              <div key={i} className="chart-column">
-                <div className="bar-wrapper">
-                  <div 
-                    className="bar income" 
-                    style={{ height: `${(data.ingresos / maxVal) * 100}%` }}
-                    title={`Ingreso: $${formatUSD(data.ingresos)}`}
-                  ></div>
-                  <div 
-                    className="bar expense" 
-                    style={{ height: `${(data.egresos / maxVal) * 100}%` }}
-                    title={`Egreso: $${formatUSD(data.egresos)}`}
-                  ></div>
-                </div>
-                <span className="bar-label">{data.day.split('/')[0]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="recent-activity glass">
-          <div className="section-header-row">
-            <h3>Actividad Reciente</h3>
-            <Link to="/pedidos" className="view-more-link">Ver Pedidos <ArrowRight size={14} /></Link>
-          </div>
-          <div className="activity-list">
-            {transactions.length === 0 ? (
-              <p className="empty-msg-small">Sin actividad reciente</p>
-            ) : (
-              recentTransactions.map((tx, i) => (
-                <div key={i} className="activity-item">
-                  <div className="activity-details">
-                    <span className="activity-name">{tx.product}</span>
-                    <span className="activity-time">{tx.date.split(',')[1] || tx.date}</span>
+          {/* Próximas Entregas (Al lado, más pequeño) */}
+          <div className="dashboard-card glass upcoming-orders-compact">
+            <div className="section-header-row">
+              <h3>Pedidos</h3>
+              <Link to="/pedidos" className="view-link">Ver todo</Link>
+            </div>
+            <div className="compact-orders-list">
+              {upcomingOrders.length === 0 ? (
+                <p className="empty-msg">Todo al día</p>
+              ) : (
+                upcomingOrders.slice(0, 5).map(o => (
+                  <div key={o.id || Math.random()} className="compact-order-item">
+                    <div className="order-info">
+                      <span className="o-client">{o.customerName}</span>
+                      <span className="o-date">{o.deliveryDate}</span>
+                    </div>
+                    <span className="o-amount">${formatUSD(o.total || 0)}</span>
                   </div>
-                  <span className={`activity-amount ${tx.type === 'egreso' ? 'text-danger' : 'text-accent'}`}>
-                    {tx.type === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
-                  </span>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

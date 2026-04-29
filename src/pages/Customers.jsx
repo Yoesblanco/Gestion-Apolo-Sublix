@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { formatUSD } from '../utils/formatters';
 import { 
   User, 
   Mail, 
@@ -10,14 +11,23 @@ import {
   Trash2, 
   ArrowLeft,
   X,
-  Search
+  Search,
+  ShoppingBag,
+  Clock,
+  CheckCircle,
+  Calendar,
+  ChevronRight,
+  Edit2
 } from 'lucide-react';
 import './Customers.css';
 
 const Customers = () => {
   const navigate = useNavigate();
-  const { customers, setCustomers } = useAppContext();
+  const { customers, setCustomers, orders, setOrders } = useAppContext();
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [editingCustomerId, setEditingCustomerId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,24 +35,87 @@ const Customers = () => {
     city: ''
   });
 
-  const handleAddCustomer = (e) => {
+  const handleEditClick = (customer) => {
+    setEditingCustomerId(customer.id);
+    setFormData({
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || '',
+      city: customer.city || ''
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingCustomerId(null);
+    setFormData({ name: '', email: '', phone: '', city: '' });
+  };
+
+  const handleSubmitCustomer = (e) => {
     e.preventDefault();
     if (!formData.name) return;
 
-    const newCustomer = {
-      id: Date.now(),
-      ...formData
-    };
+    if (editingCustomerId) {
+      // Update existing customer
+      const updatedCustomers = customers.map(c => 
+        c.id === editingCustomerId ? { ...c, ...formData } : c
+      );
+      setCustomers(updatedCustomers);
 
-    setCustomers([newCustomer, ...customers]);
-    setFormData({ name: '', email: '', phone: '', city: '' });
-    setShowForm(false);
+      // Interrelation: Update customer name in existing orders if it changed
+      const oldCustomer = customers.find(c => c.id === editingCustomerId);
+      if (oldCustomer && oldCustomer.name !== formData.name) {
+        // Update Orders
+        const updatedOrders = orders.map(o => 
+          (o.customerId === editingCustomerId || o.customer === oldCustomer.name)
+            ? { ...o, customer: formData.name }
+            : o
+        );
+        setOrders(updatedOrders);
+
+        // Update Stock History (Interrelation with Inventory)
+        const updatedStockHistory = stockHistory.map(h => 
+          (h.customer === oldCustomer.name)
+            ? { ...h, customer: formData.name }
+            : h
+        );
+        setStockHistory(updatedStockHistory);
+      }
+    } else {
+      // Add new customer
+      const newCustomer = {
+        id: Date.now(),
+        ...formData
+      };
+      setCustomers([newCustomer, ...customers]);
+    }
+
+    handleCancelForm();
   };
 
   const handleDeleteCustomer = (id) => {
     if (window.confirm('¿Eliminar este cliente de la base de datos?')) {
       setCustomers(customers.filter(c => c.id !== id));
     }
+  };
+
+  const filteredCustomers = customers.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.phone && c.phone.includes(searchTerm))
+  );
+
+  const getCustomerOrders = (customer) => {
+    return orders.filter(o => o.customerId === customer.id || o.customer === customer.name);
+  };
+
+  const hasActiveOrder = (customer) => {
+    return orders.some(o => 
+      (o.customerId === customer.id || o.customer === customer.name) && 
+      (o.status === 'Pendiente' || o.status === 'En Proceso')
+    );
   };
 
   return (
@@ -57,16 +130,27 @@ const Customers = () => {
             <p>Base de datos de clientes de Apolo Sublix</p>
           </div>
         </div>
-        <button className="add-btn" onClick={() => setShowForm(!showForm)}>
-          {showForm ? <X size={20} /> : <Plus size={20} />}
-          <span>{showForm ? 'Cancelar' : 'Nuevo Cliente'}</span>
-        </button>
+        <div className="header-actions">
+          <div className="search-box-wrapper glass">
+            <Search size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar cliente..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button className="add-btn" onClick={() => editingCustomerId ? handleCancelForm() : setShowForm(!showForm)}>
+            {showForm ? <X size={20} /> : <Plus size={20} />}
+            <span>{showForm ? 'Cancelar' : 'Nuevo Cliente'}</span>
+          </button>
+        </div>
       </div>
 
       {showForm && (
         <div className="customer-form-card glass animate-fade-in">
-          <h3>Registrar Cliente</h3>
-          <form onSubmit={handleAddCustomer} className="customer-form">
+          <h3>{editingCustomerId ? 'Editar Cliente' : 'Registrar Cliente'}</h3>
+          <form onSubmit={handleSubmitCustomer} className="customer-form">
             <div className="form-group">
               <label>Nombre Completo</label>
               <input 
@@ -105,48 +189,118 @@ const Customers = () => {
               />
             </div>
             <button type="submit" className="submit-customer-btn">
-              Guardar Cliente
+              {editingCustomerId ? 'Guardar Cambios' : 'Guardar Cliente'}
             </button>
           </form>
         </div>
       )}
 
       <div className="customers-grid">
-        {customers.length === 0 ? (
+        {filteredCustomers.length === 0 ? (
           <div className="empty-state-customers glass">
             <User size={48} />
-            <p>No hay clientes registrados aún.</p>
+            <p>{searchTerm ? 'No se encontraron clientes con esa búsqueda.' : 'No hay clientes registrados aún.'}</p>
           </div>
         ) : (
-          customers.map((c) => (
-            <div key={c.id} className="customer-card glass">
-              <button className="delete-customer-btn" onClick={() => handleDeleteCustomer(c.id)}>
-                <Trash2 size={16} />
-              </button>
-              <div className="customer-avatar">
-                <User size={32} />
+          filteredCustomers.map((c) => {
+            const isActive = hasActiveOrder(c);
+            return (
+              <div key={c.id} className={`customer-card glass ${isActive ? 'has-active-order' : ''}`}>
+                {isActive && (
+                  <div className="active-order-badge animate-pulse">
+                    <Clock size={10} /> Pedido Activo
+                  </div>
+                )}
+                <div className="customer-actions">
+                  <button className="edit-customer-btn" onClick={() => handleEditClick(c)}>
+                    <Edit2 size={16} />
+                  </button>
+                  <button className="delete-customer-btn" onClick={() => handleDeleteCustomer(c.id)}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <div className="customer-avatar">
+                  <User size={32} />
+                </div>
+                <div className="customer-info">
+                  <h3>{c.name}</h3>
+                  <div className="info-row">
+                    <Mail size={16} />
+                    <span>{c.email || 'Sin correo'}</span>
+                  </div>
+                  <div className="info-row">
+                    <Phone size={16} />
+                    <span>{c.phone || 'Sin teléfono'}</span>
+                  </div>
+                  <div className="info-row">
+                    <MapPin size={16} />
+                    <span>{c.city || 'Sin ciudad'}</span>
+                  </div>
+                </div>
+                <button className="view-history-btn" onClick={() => setSelectedCustomer(c)}>
+                  <ShoppingBag size={16} />
+                  <span>Ver Historial</span>
+                </button>
               </div>
-              <div className="customer-info">
-                <h3>{c.name}</h3>
-                <div className="info-row">
-                  <Mail size={16} />
-                  <span>{c.email || 'Sin correo'}</span>
-                </div>
-                <div className="info-row">
-                  <Phone size={16} />
-                  <span>{c.phone || 'Sin teléfono'}</span>
-                </div>
-                <div className="info-row">
-                  <MapPin size={16} />
-                  <span>{c.city || 'Sin ciudad'}</span>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      {/* Modal de Historial */}
+      {selectedCustomer && (
+        <div className="history-modal-overlay animate-fade-in">
+          <div className="history-modal glass animate-slide-up">
+            <div className="modal-header">
+              <div className="customer-header-info">
+                <div className="modal-avatar">
+                  <User size={24} />
+                </div>
+                <div>
+                  <h3>Historial: {selectedCustomer.name}</h3>
+                  <p>{getCustomerOrders(selectedCustomer).length} pedidos en total</p>
+                </div>
+              </div>
+              <button className="close-modal" onClick={() => setSelectedCustomer(null)}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-content">
+              {getCustomerOrders(selectedCustomer).length === 0 ? (
+                <div className="empty-history">
+                  <ShoppingBag size={48} />
+                  <p>Este cliente aún no tiene pedidos registrados.</p>
+                </div>
+              ) : (
+                <div className="history-list">
+                  {getCustomerOrders(selectedCustomer).map(order => (
+                    <div key={order.id} className="history-item">
+                      <div className="history-item-main">
+                        <div className="history-id">#{order.id}</div>
+                        <h4>{order.productName}</h4>
+                        <div className="history-meta">
+                          <span><Calendar size={12} /> {order.date}</span>
+                          <span>{order.quantity} unds</span>
+                        </div>
+                      </div>
+                      <div className="history-status-area">
+                        <div className={`status-badge ${order.status?.toLowerCase() || 'pendiente'}`}>
+                          {order.status === 'Entregado' ? <CheckCircle size={12} /> : <Clock size={12} />}
+                          {order.status || 'Pendiente'}
+                        </div>
+                        <div className="history-amount">${formatUSD(order.total)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default Customers;
+

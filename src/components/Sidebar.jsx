@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAppContext } from '../context/AppContext';
 import {
   LayoutDashboard,
   Package,
@@ -9,12 +10,15 @@ import {
   Users,
   Settings,
   LogOut,
-  ShoppingBag
+  ShoppingBag,
+  ChevronLeft,
+  Menu
 } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const { logout } = useAuth();
+  const { isSidebarCollapsed, setIsSidebarCollapsed } = useAppContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -33,24 +37,25 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar glass">
+    <aside className="sidebar glass collapsed">
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title={item.label}
           >
             <item.icon size={20} />
-            <span>{item.label}</span>
+            <span className="nav-label">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
       <div className="sidebar-footer">
-        <button className="logout-btn" onClick={handleLogout}>
+        <button className="logout-btn" onClick={handleLogout} title="Cerrar Sesión">
           <LogOut size={20} />
-          <span>Cerrar Sesión</span>
+          <span className="nav-label">Cerrar Sesión</span>
         </button>
       </div>
     </aside>

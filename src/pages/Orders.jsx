@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext, formatUSD } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
+import { formatUSD } from '../utils/formatters';
+import confetti from 'canvas-confetti';
 import {
   ShoppingBag,
   Clock,
@@ -19,13 +21,37 @@ import {
   Banknote,
   Phone,
   Mail,
-  AlertTriangle
+  AlertTriangle,
+  Edit2,
+  Maximize2
 } from 'lucide-react';
 import './Orders.css';
 
 const Orders = () => {
   const navigate = useNavigate();
-  const { orders, setOrders, products, setProducts, customers, setCustomers, toBuy = [], setToBuy, stockHistory = [], setStockHistory } = useAppContext();
+  const { 
+    orders, setOrders, 
+    products, setProducts, 
+    customers, setCustomers, 
+    toBuy = [], setToBuy, 
+    stockHistory = [], setStockHistory,
+    addToast
+  } = useAppContext();
+
+  // Celebra la entrega
+  const fireConfetti = () => {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#0ea5e9', '#10b981', '#f59e0b']
+    });
+  };
+  const [activeTab, setActiveTab] = useState('pending');
+  const [editingOrderId, setEditingOrderId] = useState(null);
+
+  const pendingOrders = orders.filter(o => (o.status || 'Pendiente') !== 'Entregado');
+  const finishedOrders = orders.filter(o => (o.status || 'Pendiente') === 'Entregado');
 
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -55,132 +81,35 @@ const Orders = () => {
     }
   };
 
-  const handleAddOrder = (e) => {
-    e.preventDefault();
-    if ((!isNewProduct && !formData.productId) || !formData.quantity) {
-      alert('Por favor selecciona un producto y la cantidad.');
-      return;
-    }
-
-    let customerName = '';
-
-    if (isNewCustomer) {
-      if (!formData.newName) {
-        alert('Por favor ingresa el nombre del nuevo cliente.');
-        return;
-      }
-      const newCustomer = {
-        id: Date.now(),
-        name: formData.newName,
-        phone: formData.newPhone,
-        email: formData.newEmail,
-        city: 'No especificada'
-      };
-      setCustomers([newCustomer, ...customers]);
-      customerName = formData.newName;
-    } else {
-      const selectedCustomer = customers.find(c => c.id === parseInt(formData.customerId));
-      if (!selectedCustomer) {
-        alert('Por favor selecciona un cliente.');
-        return;
-      }
-      customerName = selectedCustomer.name;
-    }
-
-    const requiredQuantity = parseInt(formData.quantity);
-    const newOrderId = `ORD-${Math.floor(100 + Math.random() * 900)}`;
-    let finalProductName = '';
-
-    if (isNewProduct) {
-      if (!formData.newProductName) {
-        alert('Por favor ingresa el nombre del nuevo producto.');
-        return;
-      }
-      finalProductName = formData.newProductName;
-
-      const newToBuyItem = {
-        id: Date.now(),
-        productName: finalProductName,
-        quantity: requiredQuantity,
-        notes: `Producto nuevo solicitado para pedido de ${customerName} (${newOrderId})`,
-        status: 'Pendiente',
-        dateAdded: new Date().toISOString(),
-        orderId: newOrderId,
-        customer: customerName
-      };
-      setToBuy(prev => [newToBuyItem, ...prev]);
-      alert(`Se han agregado ${requiredQuantity} unidades de "${finalProductName}" a la lista de "Por comprar".`);
-    } else {
-      const selectedProduct = products.find(p => p.id === parseInt(formData.productId));
-      if (!selectedProduct) return;
-      finalProductName = selectedProduct.name;
-
-      let missingAmount = 0;
-      let newStock = selectedProduct.stock - requiredQuantity;
-
-      if (newStock < 0) {
-        missingAmount = Math.abs(newStock);
-        newStock = 0;
-
-        const newToBuyItem = {
-          id: Date.now(),
-          productName: selectedProduct.name,
-          quantity: missingAmount,
-          notes: `Faltante para pedido de ${customerName} (${newOrderId})`,
-          status: 'Pendiente',
-          dateAdded: new Date().toISOString(),
-          orderId: newOrderId,
-          customer: customerName
-        };
-        setToBuy(prev => [newToBuyItem, ...prev]);
-        alert(`Stock insuficiente. Se han agregado ${missingAmount} unidades de ${selectedProduct.name} a la lista de "Por comprar".`);
-      }
-
-      // Decrement stock and add to global history
-      const subtractedQty = selectedProduct.stock - newStock;
-      if (subtractedQty > 0) {
-        const historyEntry = {
-          id: Date.now(),
-          date: new Date().toISOString(),
-          type: 'Salida',
-          productName: selectedProduct.name,
-          customer: customerName,
-          quantity: subtractedQty,
-          orderId: newOrderId,
-          notes: 'Reserva para pedido'
-        };
-        setStockHistory(prev => [historyEntry, ...(prev || [])]);
-      }
-
-      const updatedProducts = products.map(p => {
-        if (p.id === selectedProduct.id) {
-          return {
-            ...p,
-            stock: newStock,
-            status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
-          };
-        }
-        return p;
-      });
-      setProducts(updatedProducts);
-    }
-
-    const newOrder = {
-      id: newOrderId,
-      customer: customerName,
-      productName: finalProductName,
-      date: formData.emissionDate,
-      deliveryDate: formData.deliveryDate,
-      total: parseFloat(formData.price || 0),
-      status: 'Pendiente',
-      desc: formData.description,
-      quantity: parseInt(formData.quantity || 0)
-    };
-
-    setOrders([newOrder, ...orders]);
-    setShowForm(false);
+  const handleEditClick = (order) => {
+    setEditingOrderId(order.id);
+    
+    // Buscar el producto y cliente por nombre si no tienen ID (para pedidos viejos)
+    const product = products.find(p => p.id === order.productId || p.name === order.productName);
+    const customer = customers.find(c => c.id === order.customerId || c.name === order.customer);
+    
+    setFormData({
+      customerId: customer ? customer.id.toString() : '',
+      productId: product ? product.id.toString() : '',
+      description: order.desc || '',
+      emissionDate: order.date || new Date().toISOString().split('T')[0],
+      deliveryDate: order.deliveryDate || '',
+      quantity: order.quantity ? order.quantity.toString() : '',
+      price: order.total ? order.total.toString() : '',
+      newName: '',
+      newPhone: '',
+      newEmail: '',
+      newProductName: ''
+    });
     setIsNewCustomer(false);
     setIsNewProduct(false);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingOrderId(null);
     setFormData({
       customerId: '',
       productId: '',
@@ -196,41 +125,246 @@ const Orders = () => {
     });
   };
 
-  const handleDeleteOrder = (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este pedido? (Esto eliminará el registro de Por Comprar y devolverá el stock al inventario)')) {
-      setOrders(orders.filter(order => order.id !== id));
-      setToBuy(toBuy.filter(item => item.orderId !== id));
+  const handleSubmitOrder = (e) => {
+    e.preventDefault();
+    if ((!isNewProduct && !formData.productId) || !formData.quantity) {
+      alert('Por favor selecciona un producto y la cantidad.');
+      return;
+    }
 
-      const orderHistoryEntries = (stockHistory || []).filter(h => h.orderId === id && h.type === 'Salida');
+    let updatedProducts = [...products];
+    let updatedStockHistory = [...(stockHistory || [])];
+    let updatedToBuy = [...toBuy];
 
-      let updatedProducts = [...products];
-      orderHistoryEntries.forEach(record => {
-        updatedProducts = updatedProducts.map(p => {
-          if (p.name === record.productName) {
-            const restoredStock = p.stock + record.quantity;
+    // IF EDITING: First revert previous stock impact locally
+    if (editingOrderId) {
+      const oldOrder = orders.find(o => o.id === editingOrderId);
+      if (oldOrder && oldOrder.status !== 'Entregado') {
+        const orderHistoryEntries = updatedStockHistory.filter(h => h.orderId === editingOrderId && h.type === 'Salida');
+        
+        orderHistoryEntries.forEach(record => {
+          updatedProducts = updatedProducts.map(p => {
+            if (p.name === record.productName) {
+              const restoredStock = p.stock + record.quantity;
+              return {
+                ...p,
+                stock: restoredStock,
+                status: restoredStock > 10 ? 'En Stock' : restoredStock > 0 ? 'Bajo Stock' : 'Sin Stock'
+              };
+            }
+            return p;
+          });
+        });
+        
+        updatedStockHistory = updatedStockHistory.filter(h => h.orderId !== editingOrderId);
+        updatedToBuy = updatedToBuy.filter(item => item.orderId !== editingOrderId);
+      }
+    }
+
+    let customerName = '';
+    let customerId = null;
+
+    if (isNewCustomer) {
+      const newId = Date.now();
+      const newCustomer = {
+        id: newId,
+        name: formData.newName,
+        phone: formData.newPhone,
+        email: formData.newEmail,
+        city: 'No especificada'
+      };
+      setCustomers([newCustomer, ...customers]);
+      customerName = formData.newName;
+      customerId = newId;
+    } else {
+      const selectedCustomer = customers.find(c => c.id === parseInt(formData.customerId));
+      if (!selectedCustomer) {
+        alert('Por favor selecciona un cliente.');
+        return;
+      }
+      customerName = selectedCustomer.name;
+      customerId = selectedCustomer.id;
+    }
+
+    const requiredQuantity = parseInt(formData.quantity);
+    const orderId = editingOrderId || `ORD-${Math.floor(100 + Math.random() * 900)}`;
+    let finalProductName = '';
+    let missingAmount = 0;
+
+    if (isNewProduct) {
+      finalProductName = formData.newProductName;
+      updatedToBuy = [{
+        id: Date.now(),
+        productName: finalProductName,
+        quantity: requiredQuantity,
+        notes: `Requerido para pedido de ${customerName} (${orderId})`,
+        status: 'Pendiente',
+        dateAdded: new Date().toISOString(),
+        orderId: orderId,
+        customer: customerName
+      }, ...updatedToBuy];
+    } else {
+      const selectedProduct = updatedProducts.find(p => p.id === parseInt(formData.productId));
+      if (!selectedProduct) return;
+      finalProductName = selectedProduct.name;
+
+      let newStock = selectedProduct.stock - requiredQuantity;
+
+      if (newStock < 0) {
+        missingAmount = Math.abs(newStock);
+        newStock = 0;
+        updatedToBuy = [{
+          id: Date.now(),
+          productName: selectedProduct.name,
+          quantity: missingAmount,
+          notes: `Faltante para pedido de ${customerName} (${orderId})`,
+          status: 'Pendiente',
+          dateAdded: new Date().toISOString(),
+          orderId: orderId,
+          customer: customerName
+        }, ...updatedToBuy];
+      }
+
+      const subtractedQty = selectedProduct.stock - newStock;
+      if (subtractedQty > 0) {
+        updatedStockHistory = [{
+          id: Date.now(),
+          date: new Date().toISOString(),
+          type: 'Salida',
+          productName: selectedProduct.name,
+          customer: customerName,
+          quantity: subtractedQty,
+          orderId: orderId,
+          notes: 'Reserva para pedido'
+        }, ...updatedStockHistory];
+      }
+
+      updatedProducts = updatedProducts.map(p => {
+        if (p.id === selectedProduct.id) {
+          return {
+            ...p,
+            stock: newStock,
+            status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
+          };
+        }
+        return p;
+      });
+    }
+
+    const newOrderData = {
+      id: orderId,
+      customerId: customerId,
+      customer: customerName,
+      productName: finalProductName,
+      date: formData.emissionDate,
+      deliveryDate: formData.deliveryDate,
+      total: parseFloat(formData.price || 0),
+      status: editingOrderId ? orders.find(o => o.id === editingOrderId).status : 'Pendiente',
+      desc: formData.description,
+      quantity: requiredQuantity,
+      pendingStockToSubtract: isNewProduct ? requiredQuantity : missingAmount
+    };
+
+    setProducts(updatedProducts);
+    setStockHistory(updatedStockHistory);
+    setToBuy(updatedToBuy);
+
+    if (editingOrderId) {
+      setOrders(orders.map(o => o.id === editingOrderId ? newOrderData : o));
+    } else {
+      setOrders([newOrderData, ...orders]);
+    }
+
+    handleCancelForm();
+  };
+
+  const handleStatusChange = (id, newStatus) => {
+    if (newStatus === 'Entregado') {
+      const order = orders.find(o => o.id === id);
+      if (order && order.pendingStockToSubtract > 0) {
+        const updatedProducts = products.map(p => {
+          if (p.name === order.productName) {
+            const newStock = Math.max(0, p.stock - order.pendingStockToSubtract);
             return {
               ...p,
-              stock: restoredStock,
-              status: restoredStock > 10 ? 'En Stock' : restoredStock > 0 ? 'Bajo Stock' : 'Sin Stock'
+              stock: newStock,
+              status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
             };
           }
           return p;
         });
-      });
-      setProducts(updatedProducts);
-      setStockHistory((stockHistory || []).filter(h => h.orderId !== id));
+        setProducts(updatedProducts);
+
+        const historyEntry = {
+          id: Date.now(),
+          date: new Date().toISOString(),
+          type: 'Salida',
+          productName: order.productName,
+          customer: order.customer,
+          quantity: order.pendingStockToSubtract,
+          orderId: order.id,
+          notes: 'Salida de stock comprado para pedido'
+        };
+        setStockHistory(prev => [historyEntry, ...(prev || [])]);
+      }
+
+      setToBuy(toBuy.filter(item => item.orderId !== id));
+      setOrders(orders.map(order => 
+        order.id === id ? { ...order, status: newStatus, pendingStockToSubtract: 0 } : order
+      ));
+      
+      fireConfetti();
+      addToast(`¡Pedido de ${order ? order.customer : 'Cliente'} entregado!`, 'success');
+    } else {
+      setOrders(orders.map(order => 
+        order.id === id ? { ...order, status: newStatus } : order
+      ));
+      addToast(`Estado del pedido actualizado a ${newStatus}.`, 'info');
+    }
+  };
+
+  const handleDeleteOrder = (id) => {
+    const orderToDelete = orders.find(o => o.id === id);
+    if (!orderToDelete) return;
+
+    const isFinished = orderToDelete.status === 'Entregado';
+    const confirmMsg = isFinished 
+      ? '¿Estás seguro de que deseas eliminar este pedido finalizado?'
+      : '¿Estás seguro de que deseas eliminar este pedido? (Se devolverá el stock al inventario)';
+
+    if (window.confirm(confirmMsg)) {
+      setOrders(orders.filter(order => order.id !== id));
+      if (!isFinished) {
+        setToBuy(toBuy.filter(item => item.orderId !== id));
+        const orderHistoryEntries = (stockHistory || []).filter(h => h.orderId === id && h.type === 'Salida');
+        let updatedProducts = [...products];
+        orderHistoryEntries.forEach(record => {
+          updatedProducts = updatedProducts.map(p => {
+            if (p.name === record.productName) {
+              const restoredStock = p.stock + record.quantity;
+              return {
+                ...p,
+                stock: restoredStock,
+                status: restoredStock > 10 ? 'En Stock' : restoredStock > 0 ? 'Bajo Stock' : 'Sin Stock'
+              };
+            }
+            return p;
+          });
+        });
+        setProducts(updatedProducts);
+        setStockHistory((stockHistory || []).filter(h => h.orderId !== id));
+      }
+      addToast('Pedido eliminado correctamente.', 'info');
     }
   };
 
   const expiringOrders = orders.filter(order => {
     if (order.status !== 'Pendiente') return false;
     if (!order.deliveryDate) return false;
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const inTwoDays = new Date(today);
     inTwoDays.setDate(today.getDate() + 2);
-
     const delivery = new Date(order.deliveryDate);
     return delivery >= today && delivery <= inTwoDays;
   });
@@ -243,8 +377,7 @@ const Orders = () => {
           <div>
             <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1.1rem' }}>¡Atención! Pedidos por vencer</h4>
             <p style={{ margin: '4px 0 0', opacity: 0.9 }}>
-              Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto:{' '}
-              {expiringOrders.map(o => `${o.quantity} unds de ${o.productName} (${o.customer})`).join(', ')}.
+              Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto.
             </p>
           </div>
         </div>
@@ -260,16 +393,25 @@ const Orders = () => {
             <p>Seguimiento y registro de trabajos de personalización</p>
           </div>
         </div>
-        <button className="add-order-btn" onClick={() => setShowForm(!showForm)}>
+        <button className="add-order-btn" onClick={() => editingOrderId ? handleCancelForm() : setShowForm(!showForm)}>
           {showForm ? <X size={20} /> : <Plus size={20} />}
           <span>{showForm ? 'Cancelar' : 'Nuevo Pedido'}</span>
         </button>
       </div>
 
+      <div className="orders-tabs">
+        <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
+          <Clock size={18} /> En Curso ({pendingOrders.length})
+        </button>
+        <button className={`tab-btn ${activeTab === 'finished' ? 'active' : ''}`} onClick={() => setActiveTab('finished')}>
+          <CheckCircle size={18} /> Finalizados ({finishedOrders.length})
+        </button>
+      </div>
+
       {showForm && (
         <div className="order-form-container glass animate-fade-in">
-          <h3>Registrar Nuevo Pedido</h3>
-          <form onSubmit={handleAddOrder} className="order-form">
+          <h3>{editingOrderId ? 'Editar Pedido' : 'Registrar Nuevo Pedido'}</h3>
+          <form onSubmit={handleSubmitOrder} className="order-form">
             <div className="form-row">
               <div className="form-group">
                 <label><User size={14} /> Cliente</label>
@@ -325,6 +467,7 @@ const Orders = () => {
                   <label><Package size={14} /> Nombre del Nuevo Producto</label>
                   <input
                     type="text"
+                    required
                     placeholder="Escribe el nombre del producto que falta..."
                     value={formData.newProductName}
                     onChange={(e) => setFormData({ ...formData, newProductName: e.target.value })}
@@ -339,6 +482,7 @@ const Orders = () => {
                   <label><User size={14} /> Nombre del Nuevo Cliente</label>
                   <input
                     type="text"
+                    required
                     placeholder="Nombre completo"
                     value={formData.newName}
                     onChange={(e) => setFormData({ ...formData, newName: e.target.value })}
@@ -371,7 +515,6 @@ const Orders = () => {
                 <input
                   type="date"
                   required
-                  min={new Date().toISOString().split('T')[0]}
                   value={formData.deliveryDate}
                   onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
                 />
@@ -411,67 +554,63 @@ const Orders = () => {
             </div>
 
             <button type="submit" className="submit-order-btn">
-              Confirmar y Descontar Stock
+              {editingOrderId ? 'Guardar Cambios' : 'Confirmar y Descontar Stock'}
             </button>
           </form>
         </div>
       )}
 
       <div className="orders-list">
-        {orders.length === 0 ? (
-          <div className="empty-state glass">
-            <ShoppingBag size={48} />
-            <p>No hay pedidos registrados.</p>
-          </div>
-        ) : (
-          orders.map((order) => (
-            <div key={order.id} className="order-item glass">
-              <div className="order-main">
-                <div className="order-icon-wrapper">
-                  <ShoppingBag size={24} />
-                </div>
-                <div className="order-info">
-                  <div className="id-badge">{order.id}</div>
-                  <h3>{order.customer}</h3>
-                  <p className="order-product"><strong>Producto:</strong> {order.productName}</p>
-                  <p className="order-desc">{order.desc}</p>
-                </div>
-              </div>
-
-              <div className="order-meta">
-                <div className="order-details-grid">
-                  <div className="detail-item">
-                    <span className="label">Entrega</span>
-                    <span>{order.deliveryDate}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Cant.</span>
-                    <span>{order.quantity}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Total</span>
-                    <span className="amount">${typeof order.total === 'number' ? formatUSD(order.total) : order.total}</span>
-                  </div>
-                </div>
-                <div className={`order-status ${order.status.toLowerCase()}`}>
-                  {getStatusIcon(order.status)}
-                  <span>{order.status}</span>
-                </div>
-                <div className="order-actions">
-                  <button className="delete-btn" onClick={() => handleDeleteOrder(order.id)}>
-                    <Trash2 size={18} />
-                  </button>
-                  <button className="view-details">
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+        {(activeTab === 'pending' ? pendingOrders : finishedOrders).map((order) => (
+          <OrderItem 
+            key={order.id} 
+            order={order} 
+            handleDeleteOrder={handleDeleteOrder} 
+            handleStatusChange={handleStatusChange} 
+            handleEditClick={handleEditClick}
+            formatUSD={formatUSD}
+            getStatusIcon={getStatusIcon}
+          />
+        ))}
       </div>
     </div>
   );
 };
 
+const OrderItem = ({ order, handleDeleteOrder, handleStatusChange, handleEditClick, formatUSD, getStatusIcon }) => (
+  <div className="order-item glass">
+    <div className="order-main">
+      <div className="order-icon-wrapper"><ShoppingBag size={24} /></div>
+      <div className="order-info">
+        <div className="id-badge">{order.id}</div>
+        <h3>{order.customer}</h3>
+        <p className="order-product"><strong>Producto:</strong> {order.productName}</p>
+        <p className="order-desc">{order.desc}</p>
+      </div>
+    </div>
+
+    <div className="order-meta">
+      <div className="order-details-grid">
+        <div className="detail-item"><span className="label">Entrega</span><span>{order.deliveryDate}</span></div>
+        <div className="detail-item"><span className="label">Cant.</span><span>{order.quantity}</span></div>
+        <div className="detail-item"><span className="label">Total</span><span className="amount">${typeof order.total === 'number' ? formatUSD(order.total) : order.total}</span></div>
+      </div>
+      <div className={`order-status ${(order.status || 'Pendiente').toLowerCase()}`}>
+        {getStatusIcon(order.status || 'Pendiente')}
+        <span>{order.status || 'Pendiente'}</span>
+      </div>
+      <div className="order-actions">
+        {order.status !== 'Entregado' && (
+          <>
+            <button className="finish-btn" onClick={() => handleStatusChange(order.id, 'Entregado')} title="Finalizar"><CheckCircle size={18} /></button>
+            <button className="edit-btn" onClick={() => handleEditClick(order)} title="Editar"><Edit2 size={18} /></button>
+          </>
+        )}
+        <button className="delete-btn" onClick={() => handleDeleteOrder(order.id)} title="Eliminar"><Trash2 size={18} /></button>
+      </div>
+    </div>
+  </div>
+);
+
 export default Orders;
+

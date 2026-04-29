@@ -9,24 +9,209 @@
     {
       "id": 1777162513858,
       "email": "yoesblanco.3@gmail.com",
-      "password": "$2b$10$MunvVPqssvnE4XRcBNgTJO/w7NDSHe7VFP8jMbfgzsNAoXlaOwn4W",
+      "password": "$2b$10$S8HgPp6FSVHFpbkZEFD5DeXOxICJ.S8Ux3/5GZUmgXoNSy9dsCHfu",
       "name": "Yoes Blanco "
     }
   ],
-  "products": [],
-  "orders": [
+  "products": [
     {
-      "id": "ORD-699",
-      "customer": "ghgh",
-      "productName": "Taza Magica",
-      "date": "2026-04-26",
-      "deliveryDate": "2026-05-09",
-      "total": 10010,
-      "status": "Pendiente",
-      "desc": "",
-      "quantity": "5"
+      "id": 1777220555022,
+      "name": "Taza Blanca 11 Onz",
+      "category": "Sublimación",
+      "stock": 70,
+      "price": 1.3,
+      "status": "En Stock"
+    },
+    {
+      "id": 1777177327820,
+      "name": "Sueter",
+      "category": "Sublimación",
+      "stock": 0,
+      "price": 12,
+      "status": "Sin Stock"
+    },
+    {
+      "id": 1777175993294,
+      "name": "Taza Magica 11onz",
+      "category": "Sublimación",
+      "stock": 6,
+      "price": 2,
+      "status": "Bajo Stock"
     }
   ],
-  "transactions": [],
-  "customers": []
+  "orders": [
+    {
+      "id": "ORD-334",
+      "customer": "Cristina Devera",
+      "productName": "Termo skyni",
+      "date": "2026-04-26",
+      "deliveryDate": "2026-04-27",
+      "total": 0,
+      "status": "Pendiente",
+      "desc": "Pedido recuperado del historial",
+      "quantity": 1,
+      "pendingStockToSubtract": 1
+    },
+    {
+      "id": "ORD-822",
+      "customer": "Hilaria Figueroa ",
+      "productName": "Taza Blanca ",
+      "date": "2026-04-26",
+      "deliveryDate": "2026-04-27",
+      "total": 1.3,
+      "status": "Entregado",
+      "desc": "Pedido recuperado del historial",
+      "quantity": 1,
+      "pendingStockToSubtract": 0
+    },
+    {
+      "id": "ORD-736",
+      "customer": "Keilys Flores",
+      "productName": "Taza Blanca ",
+      "date": "2026-04-26",
+      "deliveryDate": "2026-04-27",
+      "total": 1.3,
+      "status": "Entregado",
+      "desc": "Pedido recuperado del historial",
+      "quantity": 1,
+      "pendingStockToSubtract": 0
+    },
+    {
+      "id": "ORD-557",
+      "customer": "Blaruth Mendoza",
+      "productName": "Sueter",
+      "date": "2026-04-26",
+      "deliveryDate": "2026-04-27",
+      "total": 12,
+      "status": "Pendiente",
+      "desc": "Pedido recuperado del historial",
+      "quantity": 1,
+      "pendingStockToSubtract": 0
+    }
+  ],
+  "transactions": [
+    {
+      "id": "TX-6199",
+      "date": "26/4/2026, 12:01:33 a. m.",
+      "product": "Deuda",
+      "amount": 50,
+      "method": "Pago Móvil",
+      "status": "Completado",
+      "type": "egreso"
+    }
+  ],
+  "customers": [
+    {
+      "id": 1777220742698,
+      "name": "Hilaria Figueroa ",
+      "phone": "04120550368",
+      "email": "",
+      "city": "No especificada"
+    },
+    {
+      "id": 1777220449689,
+      "name": "Cristina Devera",
+      "phone": "04121937873",
+      "email": "",
+      "city": "No especificada"
+    },
+    {
+      "id": 1777176385005,
+      "name": "Blaruth Mendoza",
+      "email": "",
+      "phone": "04161905593",
+      "city": "Guayana"
+    },
+    {
+      "id": 1777176249798,
+      "name": "Keilys Flores",
+      "phone": "04249048235",
+      "email": "",
+      "city": "No especificada"
+    }
+  ],
+  "toBuy": [
+    {
+      "id": 1777220449689,
+      "productName": "Termo skyni ",
+      "quantity": 1,
+      "notes": "Producto nuevo solicitado para pedido de Cristina Devera (ORD-334)",
+      "status": "Pendiente",
+      "dateAdded": "2026-04-26T16:20:49.689Z",
+      "orderId": "ORD-334",
+      "customer": "Cristina Devera"
+    }
+  ],
+  "stockHistory": [
+    {
+      "id": 1777429509570,
+      "date": "2026-04-29T02:25:09.570Z",
+      "type": "Entrada",
+      "productName": "Taza Magica 11onz",
+      "customer": "Reposición de Mercancía",
+      "quantity": 1,
+      "orderId": "N/A",
+      "notes": "Llegada de nueva mercancía"
+    },
+    {
+      "id": 1777220742698,
+      "date": "2026-04-26T16:25:42.698Z",
+      "type": "Salida",
+      "productName": "Taza Blanca ",
+      "customer": "Hilaria Figueroa ",
+      "quantity": 1,
+      "orderId": "ORD-822",
+      "notes": "Reserva para pedido"
+    },
+    {
+      "id": 1777220581447,
+      "date": "2026-04-26T16:23:01.447Z",
+      "type": "Salida",
+      "productName": "Taza Blanca ",
+      "customer": "Keilys Flores",
+      "quantity": 1,
+      "orderId": "ORD-736",
+      "notes": "Reserva para pedido"
+    },
+    {
+      "id": 1777220555023,
+      "date": "2026-04-26T16:22:35.022Z",
+      "type": "Entrada",
+      "productName": "Taza Blanca ",
+      "customer": "Inventario Inicial",
+      "quantity": 72,
+      "orderId": "N/A",
+      "notes": "Registro de producto nuevo"
+    },
+    {
+      "id": 1777177355420,
+      "date": "2026-04-26T04:22:35.420Z",
+      "type": "Salida",
+      "productName": "Sueter",
+      "customer": "Blaruth Mendoza",
+      "quantity": 1,
+      "orderId": "ORD-557",
+      "notes": "Reserva para pedido"
+    },
+    {
+      "id": 1777177327821,
+      "date": "2026-04-26T04:22:07.820Z",
+      "type": "Entrada",
+      "productName": "Sueter",
+      "customer": "Inventario Inicial",
+      "quantity": 1,
+      "orderId": "N/A",
+      "notes": "Registro de producto nuevo"
+    },
+    {
+      "id": 1777175993295,
+      "date": "2026-04-26T03:59:53.294Z",
+      "type": "Entrada",
+      "productName": "Taza Magica 11onz",
+      "customer": "Inventario Inicial",
+      "quantity": 5,
+      "orderId": "N/A",
+      "notes": "Registro de producto nuevo"
+    }
+  ]
 }

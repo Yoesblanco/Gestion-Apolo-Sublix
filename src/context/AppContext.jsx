@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
+import { formatUSD } from '../utils/formatters';
 
 const AppContext = createContext();
 const LS_KEY = 'apolo_app_data';
@@ -14,13 +15,16 @@ const loadFromStorage = () => {
         customers: Array.isArray(parsed.customers) ? parsed.customers : [],
         products: Array.isArray(parsed.products) ? parsed.products : [],
         toBuy: Array.isArray(parsed.toBuy) ? parsed.toBuy : [],
+        toBuyHistory: Array.isArray(parsed.toBuyHistory) ? parsed.toBuyHistory : [],
         stockHistory: Array.isArray(parsed.stockHistory) ? parsed.stockHistory : [],
+        theme: parsed.theme || 'dark',
+        isSidebarCollapsed: parsed.isSidebarCollapsed || false,
       };
     }
   } catch (e) {
     console.warn('Error leyendo localStorage:', e);
   }
-  return { transactions: [], orders: [], customers: [], products: [], toBuy: [], stockHistory: [] };
+  return { transactions: [], orders: [], customers: [], products: [], toBuy: [], toBuyHistory: [], stockHistory: [], theme: 'dark', isSidebarCollapsed: false };
 };
 
 const saveToStorage = (data) => {
@@ -31,23 +35,32 @@ const saveToStorage = (data) => {
   }
 };
 
-export const formatUSD = (val) =>
-  new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(val ?? 0);
+
 
 export const AppProvider = ({ children }) => {
-  // Lazy initializer: se ejecuta UNA SOLA VEZ al montar el componente
-  const [transactions, setTransactions] = useState(() => loadFromStorage().transactions);
-  const [orders, setOrders] = useState(() => loadFromStorage().orders);
-  const [customers, setCustomers] = useState(() => loadFromStorage().customers);
-  const [products, setProducts] = useState(() => loadFromStorage().products);
-  const [toBuy, setToBuy] = useState(() => loadFromStorage().toBuy);
-  const [stockHistory, setStockHistory] = useState(() => loadFromStorage().stockHistory);
+  const storedData = useMemo(() => loadFromStorage(), []);
+  
+  const [transactions, setTransactions] = useState(storedData.transactions);
+  const [orders, setOrders] = useState(storedData.orders);
+  const [customers, setCustomers] = useState(storedData.customers);
+  const [products, setProducts] = useState(storedData.products);
+  const [toBuy, setToBuy] = useState(storedData.toBuy);
+  const [toBuyHistory, setToBuyHistory] = useState(storedData.toBuyHistory);
+  const [stockHistory, setStockHistory] = useState(storedData.stockHistory);
+  const [theme, setTheme] = useState(storedData.theme);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(storedData.isSidebarCollapsed);
+  const [toasts, setToasts] = useState([]);
 
   // Flag para evitar guardar en localStorage en el primer render (ya viene de allí)
   const isFirstRender = useRef(true);
+
+  const addToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
 
   // Guardar en localStorage cada vez que cambia el estado (omitir primera carga)
   useEffect(() => {
@@ -55,21 +68,35 @@ export const AppProvider = ({ children }) => {
       isFirstRender.current = false;
       return;
     }
-    saveToStorage({ transactions, orders, customers, products, toBuy, stockHistory });
-  }, [transactions, orders, customers, products, toBuy, stockHistory]);
+    saveToStorage({ transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, theme, isSidebarCollapsed });
+  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, theme, isSidebarCollapsed]);
+
+  // Aplicar tema al body
+  useEffect(() => {
+    document.body.className = theme;
+  }, [theme]);
+
+  // Función para fusionar datos evitando duplicados por ID
+  const mergeData = (local, remote) => {
+    const map = new Map();
+    local.forEach(item => map.set(item.id, item));
+    remote.forEach(item => map.set(item.id, item));
+    return Array.from(map.values());
+  };
 
   // Intentar sincronizar con el backend solo si está disponible (opcional)
   useEffect(() => {
     fetch(`http://${window.location.hostname}:5000/api/data`)
       .then(res => res.json())
       .then(data => {
-        // Solo usamos los datos del backend si contienen información real
-        if (Array.isArray(data.transactions) && data.transactions.length > 0) setTransactions(data.transactions);
-        if (Array.isArray(data.orders) && data.orders.length > 0) setOrders(data.orders);
-        if (Array.isArray(data.customers) && data.customers.length > 0) setCustomers(data.customers);
-        if (Array.isArray(data.products) && data.products.length > 0) setProducts(data.products);
-        if (Array.isArray(data.toBuy) && data.toBuy.length > 0) setToBuy(data.toBuy);
-        if (Array.isArray(data.stockHistory) && data.stockHistory.length > 0) setStockHistory(data.stockHistory);
+        // Fusionamos en lugar de sobrescribir
+        if (Array.isArray(data.transactions)) setTransactions(prev => mergeData(prev, data.transactions));
+        if (Array.isArray(data.orders)) setOrders(prev => mergeData(prev, data.orders));
+        if (Array.isArray(data.customers)) setCustomers(prev => mergeData(prev, data.customers));
+        if (Array.isArray(data.products)) setProducts(prev => mergeData(prev, data.products));
+        if (Array.isArray(data.toBuy)) setToBuy(prev => mergeData(prev, data.toBuy));
+        if (Array.isArray(data.toBuyHistory)) setToBuyHistory(prev => mergeData(prev, data.toBuyHistory));
+        if (Array.isArray(data.stockHistory)) setStockHistory(prev => mergeData(prev, data.stockHistory));
       })
       .catch(() => { /* Backend offline — localStorage es la fuente de verdad */ });
   }, []);
@@ -81,11 +108,11 @@ export const AppProvider = ({ children }) => {
     fetch(`http://${window.location.hostname}:5000/api/data/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ products, orders, transactions, customers, toBuy, stockHistory }),
+      body: JSON.stringify({ products, orders, transactions, customers, toBuy, toBuyHistory, stockHistory }),
       signal: ctrl.signal,
     }).catch(() => { });
     return () => ctrl.abort();
-  }, [transactions, orders, customers, products, toBuy, stockHistory]);
+  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory]);
 
   // Calcular saldos reactivamente (se recalcula automáticamente cuando transactions cambia)
   const salesTotals = useMemo(() => {
@@ -115,8 +142,12 @@ export const AppProvider = ({ children }) => {
     customers, setCustomers,
     products, setProducts,
     toBuy, setToBuy,
+    toBuyHistory, setToBuyHistory,
     stockHistory, setStockHistory,
     salesTotals,
+    theme, setTheme,
+    isSidebarCollapsed, setIsSidebarCollapsed,
+    toasts, addToast,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
