@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, formatUSD } from '../context/AppContext';
 import { 
-  DollarSign, 
+  Wallet,
+  Banknote,
   TrendingUp, 
   ArrowUpRight, 
   PlusCircle,
@@ -11,7 +12,9 @@ import {
   Package,
   CreditCard,
   Layers,
-  Download
+  Download,
+  Trash2,
+  X
 } from 'lucide-react';
 import './Sales.css';
 
@@ -42,7 +45,7 @@ const Sales = () => {
       id: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toLocaleString(),
       product: formData.product,
-      amount: parseFloat(formData.amount),
+      amount: typeof formData.amount === 'string' ? parseFloat(formData.amount.replace(',', '.')) : parseFloat(formData.amount),
       method: formData.method,
       status: 'Completado',
       type: formData.type
@@ -53,7 +56,7 @@ const Sales = () => {
   };
 
   const confirmTransaction = () => {
-    setTransactions([pendingTx, ...transactions]);
+    setTransactions(prev => [pendingTx, ...prev]);
     setPendingTx(null);
     setShowConfirm(false);
     setFormData({ product: '', amount: '', method: 'Efectivo', type: 'ingreso' });
@@ -64,6 +67,12 @@ const Sales = () => {
     setShowConfirm(false);
   };
 
+  const handleDeleteTransaction = (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este movimiento? Los saldos se actualizarán automáticamente.')) {
+      setTransactions(prev => prev.filter(tx => tx.id !== id));
+    }
+  };
+
   return (
     <div className="sales animate-fade-in">
       {showConfirm && (
@@ -72,7 +81,7 @@ const Sales = () => {
             <h3>¿Confirmar Movimiento?</h3>
             <div className="confirm-details">
               <p><strong>Concepto:</strong> {pendingTx.product}</p>
-              <p><strong>Monto:</strong> Bs. {pendingTx.amount.toFixed(2)}</p>
+              <p><strong>Monto:</strong> ${formatUSD(pendingTx.amount)}</p>
               <p><strong>Tipo:</strong> <span className={`type-badge ${pendingTx.type}`}>{pendingTx.type.toUpperCase()}</span></p>
               <p><strong>Método:</strong> {pendingTx.method}</p>
             </div>
@@ -107,7 +116,7 @@ const Sales = () => {
             <TrendingUp size={20} className="text-accent" />
           </div>
           <div className="card-body">
-            <h3>Bs. {salesTotals.total.toFixed(2)}</h3>
+            <h3>${formatUSD(salesTotals.total)}</h3>
             <span className="card-subtitle success">
               <ArrowUpRight size={14} /> Neto actual
             </span>
@@ -120,9 +129,9 @@ const Sales = () => {
             <PlusCircle size={20} className="text-primary" />
           </div>
           <div className="card-body">
-            <h3 className="text-primary">Bs. {salesTotals.ingresos.toFixed(2)}</h3>
+            <h3 className="text-primary">${formatUSD(salesTotals.ingresos)}</h3>
             <span className="card-subtitle success">
-              Entradas de efectivo
+              Entradas
             </span>
           </div>
         </div>
@@ -133,7 +142,7 @@ const Sales = () => {
             <MinusCircle size={20} className="text-danger" />
           </div>
           <div className="card-body">
-            <h3 className="text-danger">Bs. {salesTotals.egresos.toFixed(2)}</h3>
+            <h3 className="text-danger">${formatUSD(salesTotals.egresos)}</h3>
             <span className="card-subtitle danger">
               Salidas y gastos
             </span>
@@ -154,7 +163,7 @@ const Sales = () => {
             />
           </div>
           <div className="form-group">
-            <label><DollarSign size={14} /> Monto (Bs.)</label>
+            <label><Banknote size={14} /> Monto ($)</label>
             <input 
               type="number" 
               step="0.01" 
@@ -180,7 +189,7 @@ const Sales = () => {
             <div className="type-toggle">
               <button 
                 type="button"
-                className={`type-btn ${filter === 'ingreso' ? 'active-ingreso' : (formData.type === 'ingreso' ? 'active-ingreso' : '')}`}
+                className={`type-btn ${formData.type === 'ingreso' ? 'active-ingreso' : ''}`}
                 onClick={() => setFormData({...formData, type: 'ingreso'})}
               >
                 Ingreso
@@ -235,12 +244,13 @@ const Sales = () => {
                 <th>Tipo</th>
                 <th>Monto</th>
                 <th>Método</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="empty-table-msg">No hay movimientos registrados aún</td>
+                  <td colSpan="7" className="empty-table-msg">No hay movimientos registrados aún</td>
                 </tr>
               ) : (
                 filteredTransactions.map((tx) => (
@@ -254,9 +264,14 @@ const Sales = () => {
                       </span>
                     </td>
                     <td className={`tx-amount ${tx.type === 'egreso' ? 'text-danger' : 'text-accent'}`}>
-                      {tx.type === 'egreso' ? '-' : '+'}Bs. {tx.amount.toFixed(2)}
+                      {tx.type === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
                     </td>
                     <td>{tx.method}</td>
+                    <td>
+                      <button className="tx-delete-btn" onClick={() => handleDeleteTransaction(tx.id)}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, formatUSD } from '../context/AppContext';
 import { 
   TrendingUp, 
   Package, 
   Users, 
-  DollarSign,
+  Wallet,
   ShoppingBag,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle
 } from 'lucide-react';
 import './Dashboard.css';
 import { Link } from 'react-router-dom';
@@ -15,7 +16,7 @@ const Dashboard = () => {
   const { salesTotals, products, customers, orders, transactions } = useAppContext();
 
   const stats = [
-    { label: 'Balance Neto', value: `Bs. ${salesTotals.total.toFixed(2)}`, icon: DollarSign, color: '#0ea5e9' },
+    { label: 'Total Actual', value: `$${formatUSD(salesTotals.total)}`, icon: Wallet, color: '#0ea5e9' },
     { label: 'Productos', value: products.length.toString(), icon: Package, color: '#10b981' },
     { label: 'Clientes', value: customers.length.toString(), icon: Users, color: '#f59e0b' },
     { label: 'Pedidos Activos', value: orders.filter(o => o.status === 'Pendiente').length.toString(), icon: ShoppingBag, color: '#8b5cf6' },
@@ -41,8 +42,36 @@ const Dashboard = () => {
 
   const recentTransactions = transactions.slice(0, 5);
 
+  const expiringOrders = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const inTwoDays = new Date(today);
+    inTwoDays.setDate(today.getDate() + 2);
+
+    return orders.filter(order => {
+      if (order.status !== 'Pendiente') return false;
+      if (!order.deliveryDate) return false;
+      
+      const delivery = new Date(order.deliveryDate);
+      return delivery >= today && delivery <= inTwoDays;
+    });
+  }, [orders]);
+
   return (
     <div className="dashboard animate-fade-in">
+      {expiringOrders.length > 0 && (
+        <div className="alert-banner warning glass" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+          <AlertTriangle size={24} color="#f59e0b" />
+          <div>
+            <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1.1rem' }}>¡Atención! Pedidos por vencer</h4>
+            <p style={{ margin: '4px 0 0', opacity: 0.9 }}>
+              Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto:{' '}
+              {expiringOrders.map(o => `${o.quantity} unds de ${o.productName} (${o.customer})`).join(', ')}.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="stats-grid">
         {stats.map((stat, i) => (
           <div key={i} className="stat-card glass">
@@ -73,12 +102,12 @@ const Dashboard = () => {
                   <div 
                     className="bar income" 
                     style={{ height: `${(data.ingresos / maxVal) * 100}%` }}
-                    title={`Ingreso: Bs. ${data.ingresos}`}
+                    title={`Ingreso: $${formatUSD(data.ingresos)}`}
                   ></div>
                   <div 
                     className="bar expense" 
                     style={{ height: `${(data.egresos / maxVal) * 100}%` }}
-                    title={`Egreso: Bs. ${data.egresos}`}
+                    title={`Egreso: $${formatUSD(data.egresos)}`}
                   ></div>
                 </div>
                 <span className="bar-label">{data.day.split('/')[0]}</span>
@@ -103,7 +132,7 @@ const Dashboard = () => {
                     <span className="activity-time">{tx.date.split(',')[1] || tx.date}</span>
                   </div>
                   <span className={`activity-amount ${tx.type === 'egreso' ? 'text-danger' : 'text-accent'}`}>
-                    {tx.type === 'egreso' ? '-' : '+'}Bs. {tx.amount.toFixed(2)}
+                    {tx.type === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
                   </span>
                 </div>
               ))

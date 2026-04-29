@@ -10,16 +10,17 @@ import {
   Package,
   Tag,
   Hash,
-  DollarSign,
-  AlertTriangle
+  Banknote,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, formatUSD } from '../context/AppContext';
 import './Inventory.css';
 
 const Inventory = () => {
   const navigate = useNavigate();
-  const { products, setProducts } = useAppContext();
+  const { products, setProducts, stockHistory = [], setStockHistory } = useAppContext();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -27,6 +28,7 @@ const Inventory = () => {
     stock: '',
     price: ''
   });
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   const handleAddProduct = (e) => {
     e.preventDefault();
@@ -37,9 +39,23 @@ const Inventory = () => {
       name: formData.name,
       category: formData.category,
       stock: parseInt(formData.stock),
-      price: `Bs. ${parseFloat(formData.price).toFixed(2)}`,
+      price: parseFloat(formData.price),
       status: parseInt(formData.stock) > 10 ? 'En Stock' : parseInt(formData.stock) > 0 ? 'Bajo Stock' : 'Sin Stock'
     };
+
+    if (newProduct.stock > 0) {
+      const historyEntry = {
+        id: Date.now() + 1,
+        date: new Date().toISOString(),
+        type: 'Entrada',
+        productName: newProduct.name,
+        customer: 'Inventario Inicial',
+        quantity: newProduct.stock,
+        orderId: 'N/A',
+        notes: 'Registro de producto nuevo'
+      };
+      setStockHistory(prev => [historyEntry, ...(prev || [])]);
+    }
 
     setProducts([newProduct, ...products]);
     setFormData({ name: '', category: 'Sublimación', stock: '', price: '' });
@@ -64,10 +80,16 @@ const Inventory = () => {
             <p>Gestión de stock de Apolo Sublix</p>
           </div>
         </div>
-        <button className="add-btn" onClick={() => setShowForm(!showForm)}>
-          {showForm ? <X size={20} /> : <Plus size={20} />}
-          <span>{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="add-btn" onClick={() => setHistoryModalOpen(true)} style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}>
+            <Clock size={20} />
+            <span>Historial Global</span>
+          </button>
+          <button className="add-btn" onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={20} /> : <Plus size={20} />}
+            <span>{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -108,7 +130,7 @@ const Inventory = () => {
               />
             </div>
             <div className="form-group">
-              <label><DollarSign size={14} /> Precio Unitario (Bs.)</label>
+              <label><Banknote size={14} /> Precio Unitario ($)</label>
               <input
                 type="number"
                 step="0.01"
@@ -166,7 +188,7 @@ const Inventory = () => {
                   <td className={p.stock === 0 ? 'text-danger font-bold' : ''}>
                     {p.stock} unidades
                   </td>
-                  <td>{p.price}</td>
+                  <td>${typeof p.price === 'number' ? formatUSD(p.price) : p.price}</td>
                   <td>
                     <span className={`status-badge ${p.status.toLowerCase().replace(' ', '-')}`}>
                       {p.status}
@@ -174,10 +196,10 @@ const Inventory = () => {
                   </td>
                   <td>
                     <div className="inv-actions">
-                      <button className="inv-delete-btn" onClick={() => handleDeleteProduct(p.id)}>
+                      <button className="inv-delete-btn" onClick={() => handleDeleteProduct(p.id)} title="Eliminar">
                         <Trash2 size={18} />
                       </button>
-                      <button className="action-btn">
+                      <button className="action-btn" title="Opciones">
                         <MoreVertical size={18} />
                       </button>
                     </div>
@@ -188,6 +210,65 @@ const Inventory = () => {
           </tbody>
         </table>
       </div>
+
+      {historyModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setHistoryModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '600px', maxWidth: '90vw' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Clock size={20} className="text-primary" />
+                Historial Global de Movimientos
+              </h3>
+              <button className="close-btn" onClick={() => setHistoryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+              {(!stockHistory || stockHistory.length === 0) ? (
+                <div className="empty-state" style={{ padding: '30px 0', textAlign: 'center', opacity: 0.6 }}>
+                  <Package size={32} style={{ marginBottom: '10px' }} />
+                  <p>Aún no hay movimientos de inventario registrados.</p>
+                </div>
+              ) : (
+                <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {stockHistory.map(record => (
+                    <div key={record.id} className="history-item glass" style={{ 
+                      padding: '15px', 
+                      borderRadius: '12px', 
+                      borderLeft: `3px solid ${record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)'}` 
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <strong style={{ color: 'var(--text-color)' }}>
+                          {record.type === 'Entrada' ? 'Entrada al Inventario' : `Pedido: ${record.customer}`}
+                        </strong>
+                        <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                          {new Date(record.date).toLocaleDateString()} {new Date(record.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>
+                          Producto: <strong>{record.productName}</strong>
+                          {record.orderId && record.orderId !== 'N/A' && <span style={{opacity: 0.7, marginLeft: '10px'}}>Ord: {record.orderId}</span>}
+                        </span>
+                        <span className="qty-badge" style={{ 
+                          background: record.type === 'Entrada' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 62, 108, 0.1)', 
+                          color: record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)', 
+                          padding: '4px 10px', 
+                          borderRadius: '20px', 
+                          fontSize: '0.9rem', 
+                          fontWeight: 'bold' 
+                        }}>
+                          {record.type === 'Entrada' ? '+' : '-'}{record.quantity} unds
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

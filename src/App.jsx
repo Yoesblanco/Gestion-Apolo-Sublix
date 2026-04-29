@@ -6,27 +6,48 @@ import Inventory from './pages/Inventory';
 import Customers from './pages/Customers';
 import Orders from './pages/Orders';
 import Sales from './pages/Sales';
+import ToBuy from './pages/ToBuy';
 import { AppProvider } from './context/AppContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
-// Placeholder components for other modules
-const Settings = () => <div className="animate-fade-in"><h2>Configuración</h2><p>Ajustes del sistema.</p></div>;
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (!user) return <Login />;
+  
+  return children;
+};
 
 function App() {
   return (
-    <AppProvider>
-      <Router>
-        <Layout>
+    <AuthProvider>
+      <AppProvider>
+        <Router>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/inventario" element={<Inventory />} />
-            <Route path="/pedidos" element={<Orders />} />
-            <Route path="/ventas" element={<Sales />} />
-            <Route path="/clientes" element={<Customers />} />
-            <Route path="/configuracion" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="*" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/inventario" element={<Inventory />} />
+                    <Route path="/pedidos" element={<Orders />} />
+                    <Route path="/ventas" element={<Sales />} />
+                    <Route path="/por-comprar" element={<ToBuy />} />
+                    <Route path="/clientes" element={<Customers />} />
+                  </Routes>
+                </Layout>
+              </ProtectedRoute>
+            } />
           </Routes>
-        </Layout>
-      </Router>
-    </AppProvider>
+        </Router>
+      </AppProvider>
+    </AuthProvider>
   );
 }
 

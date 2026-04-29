@@ -431,6 +431,24 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.tx-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tx-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
 @media (max-width: 768px) {
   .sales-overview {
     grid-template-columns: 1fr;

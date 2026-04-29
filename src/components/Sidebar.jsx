@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
   Package,
@@ -7,23 +8,32 @@ import {
   ClipboardList,
   Users,
   Settings,
-  LogOut
+  LogOut,
+  ShoppingBag
 } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Package, label: 'Inventario', path: '/inventario' },
     { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
     { icon: ClipboardList, label: 'Pedidos', path: '/pedidos' },
+    { icon: ShoppingBag, label: 'Por Comprar', path: '/por-comprar' },
     { icon: Users, label: 'Clientes', path: '/clientes' },
     { icon: Settings, label: 'Configuración', path: '/configuracion' },
   ];
 
   return (
     <aside className="sidebar glass">
-
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
@@ -38,7 +48,7 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <button className="logout-btn">
+        <button className="logout-btn" onClick={handleLogout}>
           <LogOut size={20} />
           <span>Cerrar Sesión</span>
         </button>

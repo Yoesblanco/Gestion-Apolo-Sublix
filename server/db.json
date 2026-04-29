@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@apolosublix.com",
+      "password": "$2b$10$169ocaQX5MErS4fR2yOyEO2UMNz1rdBUXh1zcUS1voI4PPgzrtjvG",
+      "name": "Administrador"
+    },
+    {
+      "id": 1777162513858,
+      "email": "yoesblanco.3@gmail.com",
+      "password": "$2b$10$MunvVPqssvnE4XRcBNgTJO/w7NDSHe7VFP8jMbfgzsNAoXlaOwn4W",
+      "name": "Yoes Blanco "
+    }
+  ],
+  "products": [],
+  "orders": [
+    {
+      "id": "ORD-699",
+      "customer": "ghgh",
+      "productName": "Taza Magica",
+      "date": "2026-04-26",
+      "deliveryDate": "2026-05-09",
+      "total": 10010,
+      "status": "Pendiente",
+      "desc": "",
+      "quantity": "5"
+    }
+  ],
+  "transactions": [],
+  "customers": []
+}
