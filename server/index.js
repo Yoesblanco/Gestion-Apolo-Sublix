@@ -67,18 +67,43 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
     const db = readDB();
-    const user = db.users.find(u => u.email === email);
+    const user = db.users.find(u => u.email === identifier || u.name.toLowerCase() === identifier.toLowerCase());
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, username: user.username || 'admin', role: user.role || 'Administrador' } });
   } catch (error) {
     res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
+app.post('/api/auth/update', async (req, res) => {
+  try {
+    const { id, email, password, name, username } = req.body;
+    const db = readDB();
+    const userIndex = db.users.findIndex(u => u.id === id || u.email === email);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    if (name) db.users[userIndex].name = name;
+    if (email) db.users[userIndex].email = email;
+    if (username) db.users[userIndex].username = username;
+    
+    if (password) {
+      db.users[userIndex].password = await bcrypt.hash(password, 10);
+    }
+
+    writeDB(db);
+    res.json({ message: 'Perfil actualizado con éxito' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar perfil' });
   }
 });
 

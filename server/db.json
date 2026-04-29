@@ -3,14 +3,8 @@
     {
       "id": 1,
       "email": "admin@apolosublix.com",
-      "password": "$2b$10$169ocaQX5MErS4fR2yOyEO2UMNz1rdBUXh1zcUS1voI4PPgzrtjvG",
+      "password": "$2b$10$/2SvMH48cyWEnhlsfc7ORuwx3lumHS3cqJSaD.wxP7UVgYZQVmDqy",
       "name": "Administrador"
-    },
-    {
-      "id": 1777162513858,
-      "email": "yoesblanco.3@gmail.com",
-      "password": "$2b$10$S8HgPp6FSVHFpbkZEFD5DeXOxICJ.S8Ux3/5GZUmgXoNSy9dsCHfu",
-      "name": "Yoes Blanco "
     }
   ],
   "products": [
@@ -91,6 +85,15 @@
   ],
   "transactions": [
     {
+      "id": "TX-7199",
+      "date": "29/4/2026, 1:13:56 a. m.",
+      "product": "jhb",
+      "amount": 5,
+      "method": "Pago Móvil",
+      "status": "Completado",
+      "type": "egreso"
+    },
+    {
       "id": "TX-6199",
       "date": "26/4/2026, 12:01:33 a. m.",
       "product": "Deuda",
@@ -132,6 +135,16 @@
   ],
   "toBuy": [
     {
+      "id": 1777434414171,
+      "productName": "Termo Skiny",
+      "quantity": 1,
+      "notes": "Requerido para pedido de Cristina Devera (ORD-334)",
+      "status": "Pendiente",
+      "dateAdded": "2026-04-29T03:46:54.171Z",
+      "orderId": "ORD-334",
+      "customer": "Cristina Devera"
+    },
+    {
       "id": 1777220449689,
       "productName": "Termo skyni ",
       "quantity": 1,
@@ -143,6 +156,16 @@
     }
   ],
   "stockHistory": [
+    {
+      "id": 1777434323803,
+      "date": "2026-04-29T03:45:23.803Z",
+      "type": "Salida",
+      "productName": "Sueter",
+      "customer": "Blaruth Mendoza",
+      "quantity": 1,
+      "orderId": "ORD-557",
+      "notes": "Reserva para pedido"
+    },
     {
       "id": 1777429509570,
       "date": "2026-04-29T02:25:09.570Z",
@@ -184,16 +207,6 @@
       "notes": "Registro de producto nuevo"
     },
     {
-      "id": 1777177355420,
-      "date": "2026-04-26T04:22:35.420Z",
-      "type": "Salida",
-      "productName": "Sueter",
-      "customer": "Blaruth Mendoza",
-      "quantity": 1,
-      "orderId": "ORD-557",
-      "notes": "Reserva para pedido"
-    },
-    {
       "id": 1777177327821,
       "date": "2026-04-26T04:22:07.820Z",
       "type": "Entrada",
@@ -212,6 +225,16 @@
       "quantity": 5,
       "orderId": "N/A",
       "notes": "Registro de producto nuevo"
+    },
+    {
+      "id": 1777177355420,
+      "date": "2026-04-26T04:22:35.420Z",
+      "type": "Salida",
+      "productName": "Sueter",
+      "customer": "Blaruth Mendoza",
+      "quantity": 1,
+      "orderId": "ORD-557",
+      "notes": "Reserva para pedido"
     }
   ]
 }

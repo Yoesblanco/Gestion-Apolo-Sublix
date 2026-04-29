@@ -16,23 +16,35 @@ export const AuthProvider = ({ children }) => {
 
     // Cargar lista de usuarios locales (o crear el admin por defecto)
     const savedUsers = localStorage.getItem('apolo_users');
+    let currentUsers = [];
+    
     if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
+      currentUsers = JSON.parse(savedUsers);
+      // Forzar actualización de la contraseña del admin por si quedó vieja en caché
+      currentUsers = currentUsers.map(u => 
+        u.username === 'admin' ? { ...u, password: 'admin123' } : u
+      );
     } else {
-      const defaultUsers = [
-        { id: '1', username: 'admin', email: 'admin@apolosublix.com', password: 'admin', name: 'Administrador' }
+      currentUsers = [
+        { id: '1', username: 'admin', email: 'admin@apolosublix.com', password: 'admin123', name: 'Administrador' }
       ];
-      setUsers(defaultUsers);
-      localStorage.setItem('apolo_users', JSON.stringify(defaultUsers));
     }
+    
+    setUsers(currentUsers);
+    localStorage.setItem('apolo_users', JSON.stringify(currentUsers));
     
     setLoading(false);
   }, []);
 
   const login = async (identifier, password) => {
-    // Intentar login local primero (fuente de verdad para este entorno)
+    const idLower = identifier.trim().toLowerCase();
+    
+    // Intentar login local primero
     const foundUser = users.find(u => 
-      (u.username === identifier || u.email === identifier) && u.password === password
+      (u.username?.toLowerCase() === idLower || 
+       u.email?.toLowerCase() === idLower || 
+       u.name?.toLowerCase() === idLower) && 
+      u.password === password
     );
 
     if (foundUser) {
@@ -127,6 +139,15 @@ export const AuthProvider = ({ children }) => {
     delete newSessionUser.password;
     localStorage.setItem('apolo_user', JSON.stringify(newSessionUser));
     setUser(newSessionUser);
+
+    // Intentar actualizar en backend
+    try {
+      await fetch(`http://${window.location.hostname}:5000/api/auth/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newSessionUser, id: user.id, password: updatedData.password })
+      });
+    } catch (e) { console.error('Error sincronizando con servidor:', e); }
 
     return { success: true, message: 'Perfil actualizado correctamente' };
   };
