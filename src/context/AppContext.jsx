@@ -17,17 +17,19 @@ const loadFromStorage = () => {
         toBuy: Array.isArray(parsed.toBuy) ? parsed.toBuy : [],
         toBuyHistory: Array.isArray(parsed.toBuyHistory) ? parsed.toBuyHistory : [],
         stockHistory: Array.isArray(parsed.stockHistory) ? parsed.stockHistory : [],
-        theme: parsed.theme || 'dark'
+        theme: parsed.theme || 'dark',
+        lastUpdated: parsed.lastUpdated || 0
       };
     }
   } catch (e) {
     console.warn('Error leyendo localStorage:', e);
   }
-  return { transactions: [], orders: [], customers: [], products: [], toBuy: [], toBuyHistory: [], stockHistory: [], theme: 'dark' };
+  return { transactions: [], orders: [], customers: [], products: [], toBuy: [], toBuyHistory: [], stockHistory: [], theme: 'dark', lastUpdated: 0 };
 };
 
 const saveToStorage = (data) => {
   try {
+    data.lastUpdated = Date.now();
     localStorage.setItem(LS_KEY, JSON.stringify(data));
   } catch (e) {
     console.warn('Error guardando en localStorage:', e);
@@ -46,6 +48,7 @@ export const AppProvider = ({ children }) => {
   const [stockHistory, setStockHistory] = useState(storedData.stockHistory);
   const [theme, setTheme] = useState(storedData.theme);
   const [toasts, setToasts] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Flag para evitar guardar en localStorage en el primer render (ya viene de allí)
   const isFirstRender = useRef(true);
@@ -72,14 +75,6 @@ export const AppProvider = ({ children }) => {
     document.body.className = theme;
   }, [theme]);
 
-  // Función para fusionar datos evitando duplicados por ID
-  const mergeData = (local, remote) => {
-    const map = new Map();
-    local.forEach(item => map.set(item.id, item));
-    remote.forEach(item => map.set(item.id, item));
-    return Array.from(map.values());
-  };
-
   // Carga inicial desde el servidor
   useEffect(() => {
     const fetchData = async () => {
@@ -88,35 +83,53 @@ export const AppProvider = ({ children }) => {
         if (!res.ok) throw new Error('Error al conectar con el servidor');
         const data = await res.json();
         
-        // Al iniciar, el servidor es la fuente de verdad definitiva
-        if (Array.isArray(data.transactions)) setTransactions(data.transactions);
-        if (Array.isArray(data.orders)) setOrders(data.orders);
-        if (Array.isArray(data.customers)) setCustomers(data.customers);
-        if (Array.isArray(data.products)) setProducts(data.products);
-        if (Array.isArray(data.toBuy)) setToBuy(data.toBuy);
-        if (Array.isArray(data.toBuyHistory)) setToBuyHistory(data.toBuyHistory);
-        if (Array.isArray(data.stockHistory)) setStockHistory(data.stockHistory);
-        
-        console.log('Datos sincronizados desde el servidor correctamente.');
+        const serverLastUpdated = data.lastSync || 0;
+        const localData = loadFromStorage();
+        const localLastUpdated = localData.lastUpdated || 0;
+
+        // Last Write Wins (LWW): Si el servidor tiene datos más recientes, sobrescribimos lo local.
+        // Esto soluciona el problema de que los elementos eliminados volvían a aparecer (efecto zombie de mergeData).
+        if (serverLastUpdated > localLastUpdated) {
+          console.log('Datos del servidor son más recientes. Actualizando estado local...');
+          if (Array.isArray(data.transactions)) setTransactions(data.transactions);
+          if (Array.isArray(data.orders)) setOrders(data.orders);
+          if (Array.isArray(data.customers)) setCustomers(data.customers);
+          if (Array.isArray(data.products)) setProducts(data.products);
+          if (Array.isArray(data.toBuy)) setToBuy(data.toBuy);
+          if (Array.isArray(data.toBuyHistory)) setToBuyHistory(data.toBuyHistory);
+          if (Array.isArray(data.stockHistory)) setStockHistory(data.stockHistory);
+        } else {
+          console.log('Datos locales están actualizados o son más recientes.');
+        }
       } catch (err) {
         console.warn('Usando datos locales: No se pudo contactar con el servidor.');
+      } finally {
+        setIsInitialized(true);
       }
     };
     fetchData();
   }, []);
 
+  const syncTimestamp = useRef(Date.now());
+
   // Sincronizar al backend cuando hay cambios
   useEffect(() => {
-    if (isFirstRender.current) return;
-    const ctrl = new AbortController();
+    if (!isInitialized) return;
+    
+    syncTimestamp.current = Date.now();
+    
     fetch(`http://${window.location.hostname}:5000/api/data/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ products, orders, transactions, customers, toBuy, toBuyHistory, stockHistory }),
-      signal: ctrl.signal,
+      body: JSON.stringify({ 
+        products, orders, transactions, customers, toBuy, toBuyHistory, stockHistory,
+        timestamp: syncTimestamp.current
+      }),
     }).catch(() => { });
-    return () => ctrl.abort();
-  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory]);
+    // Importante: No abortamos la petición (removemos AbortController).
+    // Si el usuario cierra la pestaña justo después de eliminar algo, queremos que la petición de guardado continúe 
+    // y llegue al servidor para no perder la acción de borrado.
+  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, isInitialized]);
 
   const salesTotals = useMemo(() => {
     const ingresos = transactions

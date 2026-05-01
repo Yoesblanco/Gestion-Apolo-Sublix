@@ -26,7 +26,9 @@ const readDB = () => {
       transactions: [], 
       customers: [],
       toBuy: [],
-      stockHistory: []
+      toBuyHistory: [],
+      stockHistory: [],
+      lastSync: 0
     };
     fs.writeFileSync(DB_PATH, JSON.stringify(initialDB, null, 2));
     return initialDB;
@@ -34,6 +36,7 @@ const readDB = () => {
   const db = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
   // Ensure new fields exist for old databases
   if (!db.toBuy) db.toBuy = [];
+  if (!db.toBuyHistory) db.toBuyHistory = [];
   if (!db.stockHistory) db.stockHistory = [];
   return db;
 };
@@ -114,14 +117,22 @@ app.get('/api/data', (req, res) => {
 });
 
 app.post('/api/data/sync', (req, res) => {
-  const { products, orders, transactions, customers, toBuy, stockHistory } = req.body;
+  const { products, orders, transactions, customers, toBuy, toBuyHistory, stockHistory, timestamp } = req.body;
   const db = readDB();
+
+  if (timestamp && db.lastSync && timestamp < db.lastSync) {
+    return res.status(400).json({ message: 'Outdated sync ignored' });
+  }
+
   db.products = products || [];
   db.orders = orders || [];
   db.transactions = transactions || [];
   db.customers = customers || [];
   db.toBuy = toBuy || [];
+  db.toBuyHistory = toBuyHistory || [];
   db.stockHistory = stockHistory || [];
+  db.lastSync = timestamp || Date.now();
+  
   writeDB(db);
   res.json({ message: 'Datos sincronizados' });
 });

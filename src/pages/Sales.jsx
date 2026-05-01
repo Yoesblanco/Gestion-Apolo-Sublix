@@ -106,7 +106,7 @@ const Sales = () => {
         return {
           ...tx,
           product: formData.product,
-          amount: parseFloat(formData.amount),
+          amount: typeof formData.amount === 'string' ? parseFloat(formData.amount.replace(',', '.')) : parseFloat(formData.amount),
           method: formData.method,
           type: formData.type
         };
