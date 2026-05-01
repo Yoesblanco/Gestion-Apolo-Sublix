@@ -9,10 +9,26 @@
   ],
   "products": [
     {
+      "id": 1777599513404,
+      "name": "Termo skyni ",
+      "category": "Otros",
+      "stock": 1,
+      "price": 9.05,
+      "status": "Bajo Stock"
+    },
+    {
+      "id": 1777599426247,
+      "name": "Llaveros",
+      "category": "Sublimación",
+      "stock": 113,
+      "price": 0.26,
+      "status": "En Stock"
+    },
+    {
       "id": 1777220555022,
       "name": "Taza Blanca 11 Onz",
       "category": "Sublimación",
-      "stock": 70,
+      "stock": 67,
       "price": 1.3,
       "status": "En Stock"
     },
@@ -20,9 +36,9 @@
       "id": 1777177327820,
       "name": "Sueter",
       "category": "Sublimación",
-      "stock": 0,
-      "price": 12,
-      "status": "Sin Stock"
+      "stock": 2,
+      "price": 15,
+      "status": "Bajo Stock"
     },
     {
       "id": 1777175993294,
@@ -35,6 +51,34 @@
   ],
   "orders": [
     {
+      "id": "ORD-387",
+      "customerId": 1777578159094,
+      "customer": "Yolimar Alfonzo",
+      "productName": "Taza Blanca 11 Onz",
+      "date": "2026-04-30",
+      "deliveryDate": "0026-05-08",
+      "total": 8,
+      "status": "Pendiente",
+      "desc": "",
+      "quantity": 1,
+      "pendingStockToSubtract": 0,
+      "payments": []
+    },
+    {
+      "id": "ORD-335",
+      "customerId": 1777570301125,
+      "customer": "Milagros",
+      "productName": "Taza Blanca 11 Onz",
+      "date": "2026-04-30",
+      "deliveryDate": "2026-04-02",
+      "total": 16,
+      "status": "Pendiente",
+      "desc": "",
+      "quantity": 2,
+      "pendingStockToSubtract": 0,
+      "payments": []
+    },
+    {
       "id": "ORD-334",
       "customer": "Cristina Devera",
       "productName": "Termo skyni",
@@ -44,7 +88,8 @@
       "status": "Pendiente",
       "desc": "Pedido recuperado del historial",
       "quantity": 1,
-      "pendingStockToSubtract": 1
+      "pendingStockToSubtract": 1,
+      "payments": []
     },
     {
       "id": "ORD-822",
@@ -52,11 +97,20 @@
       "productName": "Taza Blanca ",
       "date": "2026-04-26",
       "deliveryDate": "2026-04-27",
-      "total": 1.3,
+      "total": 8,
       "status": "Entregado",
       "desc": "Pedido recuperado del historial",
       "quantity": 1,
-      "pendingStockToSubtract": 0
+      "pendingStockToSubtract": 0,
+      "payments": [
+        {
+          "id": 1777606398388.1028,
+          "amount": 8,
+          "date": "2026-04-27",
+          "method": "Efectivo",
+          "notes": "Pago total recuperado"
+        }
+      ]
     },
     {
       "id": "ORD-736",
@@ -64,46 +118,143 @@
       "productName": "Taza Blanca ",
       "date": "2026-04-26",
       "deliveryDate": "2026-04-27",
-      "total": 1.3,
+      "total": 8,
       "status": "Entregado",
       "desc": "Pedido recuperado del historial",
       "quantity": 1,
-      "pendingStockToSubtract": 0
+      "pendingStockToSubtract": 0,
+      "payments": [
+        {
+          "id": 1777606398388.3118,
+          "amount": 8,
+          "date": "2026-04-27",
+          "method": "Efectivo",
+          "notes": "Pago total recuperado"
+        }
+      ]
     },
     {
       "id": "ORD-557",
+      "customerId": 1777176385005,
       "customer": "Blaruth Mendoza",
       "productName": "Sueter",
       "date": "2026-04-26",
       "deliveryDate": "2026-04-27",
-      "total": 12,
+      "total": 25,
       "status": "Pendiente",
       "desc": "Pedido recuperado del historial",
       "quantity": 1,
-      "pendingStockToSubtract": 0
+      "pendingStockToSubtract": 0,
+      "payments": []
     }
   ],
   "transactions": [
     {
-      "id": "TX-7199",
-      "date": "29/4/2026, 1:13:56 a. m.",
-      "product": "jhb",
-      "amount": 5,
-      "method": "Pago Móvil",
-      "status": "Completado",
-      "type": "egreso"
+      "id": 1777599513406,
+      "date": "2026-05-01T01:38:33.404Z",
+      "amount": 9.05,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Compra realizada desde la lista de \"Por comprar\". Producto nuevo solicitado para pedido de Cristina Devera (ORD-334) (1 unds de Termo skyni )",
+      "orderId": "ORD-334"
     },
     {
-      "id": "TX-6199",
-      "date": "26/4/2026, 12:01:33 a. m.",
-      "product": "Deuda",
-      "amount": 50,
-      "method": "Pago Móvil",
-      "status": "Completado",
-      "type": "egreso"
+      "id": 1777599449600,
+      "date": "2026-05-01T01:37:29.599Z",
+      "amount": 3.38,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Llegada de nueva mercancía (13 unds de Llaveros)",
+      "orderId": null
+    },
+    {
+      "id": 1777599426249,
+      "date": "2026-05-01T01:37:06.247Z",
+      "amount": 26,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Registro de producto nuevo (100 unds de Llaveros)",
+      "orderId": null
+    },
+    {
+      "id": 1777588519439,
+      "date": "2026-04-30T22:35:19.438Z",
+      "amount": 15,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Llegada de nueva mercancía (1 unds de Sueter)",
+      "orderId": null
+    },
+    {
+      "id": 1777588482824,
+      "date": "2026-04-30T22:34:42.822Z",
+      "amount": 26,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Registro de producto nuevo (100 unds de llaveros )",
+      "orderId": null
+    },
+    {
+      "id": 1777429509571,
+      "date": "2026-04-29T02:25:09.570Z",
+      "amount": 2,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Llegada de nueva mercancía (1 unds de Taza Magica 11onz)",
+      "orderId": null
+    },
+    {
+      "id": 1777177327822,
+      "date": "2026-04-26T04:22:07.820Z",
+      "amount": 15,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Registro de producto nuevo (1 unds de Sueter)",
+      "orderId": null
+    },
+    {
+      "id": 1777175993296,
+      "date": "2026-04-26T03:59:53.294Z",
+      "amount": 10,
+      "type": "Egreso",
+      "category": "Inventario/Materia Prima",
+      "description": "Historial: Registro de producto nuevo (5 unds de Taza Magica 11onz)",
+      "orderId": null
+    },
+    {
+      "id": 1777606398389.1028,
+      "date": "2026-04-27",
+      "amount": 8,
+      "type": "Ingreso",
+      "category": "Venta/Pedido",
+      "description": "Pago pedido ORD-822",
+      "orderId": "ORD-822"
+    },
+    {
+      "id": 1777606398389.3118,
+      "date": "2026-04-27",
+      "amount": 8,
+      "type": "Ingreso",
+      "category": "Venta/Pedido",
+      "description": "Pago pedido ORD-736",
+      "orderId": "ORD-736"
     }
   ],
   "customers": [
+    {
+      "id": 1777578159094,
+      "name": "Yolimar Alfonzo",
+      "phone": "0424968281",
+      "email": "",
+      "city": "No especificada"
+    },
+    {
+      "id": 1777570301125,
+      "name": "Milagros",
+      "phone": "04167987651",
+      "email": "",
+      "city": "Puerto Ordaz"
+    },
     {
       "id": 1777220742698,
       "name": "Hilaria Figueroa ",
@@ -133,37 +284,86 @@
       "city": "No especificada"
     }
   ],
-  "toBuy": [
-    {
-      "id": 1777434414171,
-      "productName": "Termo Skiny",
-      "quantity": 1,
-      "notes": "Requerido para pedido de Cristina Devera (ORD-334)",
-      "status": "Pendiente",
-      "dateAdded": "2026-04-29T03:46:54.171Z",
-      "orderId": "ORD-334",
-      "customer": "Cristina Devera"
-    },
-    {
-      "id": 1777220449689,
-      "productName": "Termo skyni ",
-      "quantity": 1,
-      "notes": "Producto nuevo solicitado para pedido de Cristina Devera (ORD-334)",
-      "status": "Pendiente",
-      "dateAdded": "2026-04-26T16:20:49.689Z",
-      "orderId": "ORD-334",
-      "customer": "Cristina Devera"
-    }
-  ],
+  "toBuy": [],
   "stockHistory": [
     {
-      "id": 1777434323803,
-      "date": "2026-04-29T03:45:23.803Z",
+      "id": 1777599780758,
+      "date": "2026-05-01T01:43:00.758Z",
       "type": "Salida",
       "productName": "Sueter",
       "customer": "Blaruth Mendoza",
       "quantity": 1,
       "orderId": "ORD-557",
+      "notes": "Reserva para pedido"
+    },
+    {
+      "id": 1777599513405,
+      "date": "2026-05-01T01:38:33.404Z",
+      "type": "Entrada",
+      "productName": "Termo skyni ",
+      "customer": "Compra Directa (Lista de Faltantes)",
+      "quantity": 1,
+      "orderId": "ORD-334",
+      "notes": "Compra realizada desde la lista de \"Por comprar\". Producto nuevo solicitado para pedido de Cristina Devera (ORD-334)"
+    },
+    {
+      "id": 1777599449599,
+      "date": "2026-05-01T01:37:29.599Z",
+      "type": "Entrada",
+      "productName": "Llaveros",
+      "customer": "Reposición de Mercancía",
+      "quantity": 13,
+      "orderId": "N/A",
+      "notes": "Llegada de nueva mercancía"
+    },
+    {
+      "id": 1777599426248,
+      "date": "2026-05-01T01:37:06.247Z",
+      "type": "Entrada",
+      "productName": "Llaveros",
+      "customer": "Inventario Inicial",
+      "quantity": 100,
+      "orderId": "N/A",
+      "notes": "Registro de producto nuevo"
+    },
+    {
+      "id": 1777588519438,
+      "date": "2026-04-30T22:35:19.438Z",
+      "type": "Entrada",
+      "productName": "Sueter",
+      "customer": "Reposición de Mercancía",
+      "quantity": 1,
+      "orderId": "N/A",
+      "notes": "Llegada de nueva mercancía"
+    },
+    {
+      "id": 1777588482823,
+      "date": "2026-04-30T22:34:42.822Z",
+      "type": "Entrada",
+      "productName": "llaveros ",
+      "customer": "Inventario Inicial",
+      "quantity": 100,
+      "orderId": "N/A",
+      "notes": "Registro de producto nuevo"
+    },
+    {
+      "id": 1777578159095,
+      "date": "2026-04-30T19:42:39.095Z",
+      "type": "Salida",
+      "productName": "Taza Blanca 11 Onz",
+      "customer": "yoi",
+      "quantity": 1,
+      "orderId": "ORD-387",
+      "notes": "Reserva para pedido"
+    },
+    {
+      "id": 1777570301125,
+      "date": "2026-04-30T17:31:41.125Z",
+      "type": "Salida",
+      "productName": "Taza Blanca 11 Onz",
+      "customer": "milagro",
+      "quantity": 2,
+      "orderId": "ORD-335",
       "notes": "Reserva para pedido"
     },
     {
@@ -225,16 +425,6 @@
       "quantity": 5,
       "orderId": "N/A",
       "notes": "Registro de producto nuevo"
-    },
-    {
-      "id": 1777177355420,
-      "date": "2026-04-26T04:22:35.420Z",
-      "type": "Salida",
-      "productName": "Sueter",
-      "customer": "Blaruth Mendoza",
-      "quantity": 1,
-      "orderId": "ORD-557",
-      "notes": "Reserva para pedido"
     }
   ]
 }

@@ -11,16 +11,29 @@ import {
   CheckCircle,
   Banknote,
   Edit2,
-  Clock
+  Clock,
+  CreditCard
 } from 'lucide-react';
 import './ToBuy.css';
 
 const ToBuy = () => {
-  const { toBuy = [], setToBuy, toBuyHistory = [], setToBuyHistory, products = [], setProducts, setStockHistory } = useAppContext();
+  const { 
+    toBuy = [], 
+    setToBuy, 
+    toBuyHistory = [], 
+    setToBuyHistory, 
+    products = [], 
+    setProducts, 
+    setStockHistory, 
+    transactions, 
+    setTransactions,
+    orders = [] 
+  } = useAppContext();
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'history'
   const [buyModalOpen, setBuyModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [purchasePrice, setPurchasePrice] = useState('');
+  const [purchaseMethod, setPurchaseMethod] = useState('EFECTIVO BCV');
   const [showForm, setShowForm] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
   const [formData, setFormData] = useState({
@@ -48,26 +61,27 @@ const ToBuy = () => {
 
   const handleSubmitItem = (e) => {
     e.preventDefault();
-    if (!formData.productName || !formData.quantity) {
-      alert('Por favor ingresa el nombre del producto y la cantidad.');
-      return;
-    }
+    if (!formData.productName || !formData.quantity) return;
+
+    // VALIDACIÓN AUTOMÁTICA DE ID:
+    // Buscamos si el nombre que escribió el usuario ya existe en el inventario
+    const matchedProduct = products.find(p => p.name.toLowerCase() === formData.productName.toLowerCase());
 
     if (editingItemId) {
-      const updatedToBuy = toBuy.map(item => 
-        item.id === editingItemId 
-          ? { 
-              ...item, 
-              productName: formData.productName, 
-              quantity: parseInt(formData.quantity), 
-              notes: formData.notes 
-            } 
-          : item
+      const updatedToBuy = toBuy.map(item =>
+        item.id === editingItemId ? { 
+          ...item, 
+          productName: formData.productName,
+          productId: matchedProduct ? matchedProduct.id : null, // Asignamos ID si existe
+          quantity: parseInt(formData.quantity),
+          notes: formData.notes
+        } : item
       );
       setToBuy(updatedToBuy);
     } else {
       const newItem = {
         id: Date.now(),
+        productId: matchedProduct ? matchedProduct.id : null, // Asignamos ID si existe
         productName: formData.productName,
         quantity: parseInt(formData.quantity),
         notes: formData.notes || 'Agregado manualmente',
@@ -81,9 +95,74 @@ const ToBuy = () => {
   };
 
   const handleDeleteItem = (id, isHistory = false) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este registro?')) {
+    const warningMsg = isHistory 
+      ? '¡ADVERTENCIA DE SEGURIDAD! Estás a punto de ANULAR esta compra.\n\nEsto restará el stock del inventario, borrará el gasto de tus ventas y el producto volverá a aparecer como PENDIENTE.\n\n¿Estás SEGURO de que quieres deshacer esta operación?'
+      : '¿Estás seguro de que deseas eliminar este registro de la lista de pendientes?';
+
+    if (window.confirm(warningMsg)) {
       if (isHistory) {
-        setToBuyHistory(toBuyHistory.filter(item => item.id !== id));
+        const itemToUndo = toBuyHistory.find(item => item.id === id);
+        if (itemToUndo) {
+          // 1. Revertir Stock en Inventario
+          const updatedProducts = products.map(p => {
+            // Buscamos coincidencia: por ID (si existe) o por nombre (si no hay ID)
+            const isMatch = (itemToUndo.productId && p.id === itemToUndo.productId) || 
+                            (p.name.toLowerCase() === itemToUndo.productName.toLowerCase());
+
+            if (isMatch) {
+              const qtyToSubtract = itemToUndo.quantity || 0;
+              let currentQty = qtyToSubtract;
+              let newReserved = p.reserved || 0;
+              let newStock = p.stock || 0;
+
+              if (itemToUndo.orderId) {
+                // Si era un apartado, primero intentamos restar de "Apartados"
+                const fromReserved = Math.min(newReserved, currentQty);
+                newReserved -= fromReserved;
+                currentQty -= fromReserved;
+                
+                // Si aún falta por restar (porque se movieron a disponible), restamos de "Disponible"
+                if (currentQty > 0) {
+                  newStock = Math.max(0, newStock - currentQty);
+                }
+              } else {
+                // Si era stock general, restamos directo de "Disponible"
+                newStock = Math.max(0, newStock - currentQty);
+              }
+
+              return { 
+                ...p, 
+                reserved: newReserved,
+                stock: newStock, 
+                status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock' 
+              };
+            }
+            return p;
+          });
+          setProducts(updatedProducts);
+
+          // 2. Eliminar Transacción (Gasto)
+          if (itemToUndo.transactionId) {
+            setTransactions(prev => prev.filter(t => t.id !== itemToUndo.transactionId));
+          }
+
+          // 3. Restaurar en Pendientes si era de un pedido
+          if (itemToUndo.orderId) {
+            const restoredItem = {
+              ...itemToUndo,
+              id: Date.now(),
+              status: 'Pendiente',
+              dateAdded: new Date().toISOString()
+            };
+            delete restoredItem.dateBought;
+            delete restoredItem.purchasePrice;
+            delete restoredItem.transactionId;
+            setToBuy(prev => [restoredItem, ...prev]);
+          }
+
+          setToBuyHistory(toBuyHistory.filter(item => item.id !== id));
+          alert('Compra anulada y stock revertido correctamente.');
+        }
       } else {
         setToBuy(toBuy.filter(item => item.id !== id));
       }
@@ -97,34 +176,63 @@ const ToBuy = () => {
     const qty = parseInt(selectedItem.quantity);
     const price = parseFloat(purchasePrice);
 
-    // 1. Buscar si el producto existe en el inventario
-    const existingProduct = products.find(p => p.name.toLowerCase() === selectedItem.productName.toLowerCase());
+    // 1. Buscar si el producto existe en el inventario (Prioridad ID, luego Nombre)
+    const existingProduct = products.find(p => 
+      (selectedItem.productId && p.id === selectedItem.productId) || 
+      (p.name.toLowerCase() === selectedItem.productName.toLowerCase())
+    );
 
     if (existingProduct) {
       const updatedProducts = products.map(p => {
-        if (p.id === existingProduct.id) {
-          const newStock = p.stock + qty;
-          return {
-            ...p,
-            stock: newStock,
-            price: price,
-            status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
-          };
+        // Prioridad por ID, si no tiene ID (compras manuales), usamos el nombre
+        const isMatch = (selectedItem.productId && p.id === selectedItem.productId) || 
+                        (!selectedItem.productId && p.name.toLowerCase() === selectedItem.productName.toLowerCase());
+        
+        if (isMatch) {
+          if (selectedItem.orderId) {
+            const newReserved = (p.reserved || 0) + qty;
+            return { ...p, reserved: newReserved };
+          } else {
+            const newStock = p.stock + qty;
+            return {
+              ...p,
+              stock: newStock,
+              status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
+            };
+          }
         }
         return p;
       });
       setProducts(updatedProducts);
     } else {
+      // Si el producto es nuevo, también validamos si debe ir a Apartados
+      const isReserved = !!selectedItem.orderId;
       const newProduct = {
         id: Date.now(),
         name: selectedItem.productName,
         category: 'Otros',
-        stock: qty,
+        stock: isReserved ? 0 : qty,
+        reserved: isReserved ? qty : 0,
         price: price,
-        status: qty > 10 ? 'En Stock' : qty > 0 ? 'Bajo Stock' : 'Sin Stock'
+        status: (isReserved ? 0 : qty) > 10 ? 'En Stock' : (isReserved ? 0 : qty) > 0 ? 'Bajo Stock' : 'Sin Stock'
       };
       setProducts([newProduct, ...products]);
     }
+
+    // Registrar gasto de la compra (Egreso)
+    const txId = `TX-BUY-${Date.now()}`;
+    const totalCost = qty * (price || 0);
+    const newTransaction = {
+      id: txId,
+      date: new Date().toISOString(),
+      amount: totalCost,
+      type: 'Egreso',
+      category: 'Inventario/Materia Prima',
+      method: purchaseMethod,
+      description: `Compra de ${qty} unds de ${selectedItem.productName}`,
+      orderId: selectedItem.orderId || null
+    };
+    setTransactions(prev => [newTransaction, ...prev]);
 
     // 2. Agregar al historial global de inventario
     const historyEntry = {
@@ -144,7 +252,9 @@ const ToBuy = () => {
       ...selectedItem,
       status: 'Comprado',
       dateBought: new Date().toISOString(),
-      purchasePrice: price
+      purchasePrice: price,
+      productId: existingProduct ? existingProduct.id : selectedItem.productId, // ASEGURAMOS QUE EL ID SE GRABE
+      transactionId: txId // VINCULAMOS PARA PODER REVERTIR
     };
     setToBuyHistory([boughtItem, ...toBuyHistory]);
 
@@ -170,7 +280,15 @@ const ToBuy = () => {
             <p>Lista de productos faltantes y requeridos</p>
           </div>
         </div>
-        <button className="add-item-btn" onClick={() => editingItemId ? handleCancelForm() : setShowForm(!showForm)}>
+        <button className="add-item-btn" onClick={() => {
+          if (editingItemId) {
+            handleCancelForm();
+          } else {
+            const nextShow = !showForm;
+            setShowForm(nextShow);
+            if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }}>
           {showForm ? <X size={20} /> : <Plus size={20} />}
           <span>{showForm ? 'Cancelar' : 'Agregar'}</span>
         </button>
@@ -183,6 +301,19 @@ const ToBuy = () => {
         <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
           <CheckCircle size={18} /> Historial ({toBuyHistory.length})
         </button>
+        {activeTab === 'history' && toBuyHistory.length > 0 && (
+          <button 
+            onClick={() => {
+              const clearMsg = '¡AVISO DE LIMPIEZA! Esto solo vaciará la lista visual del historial para mantenerla ordenada.\n\nNO afectará al stock del inventario ni al dinero ya registrado en ventas.\n\n¿Deseas limpiar la vista ahora?';
+              if (window.confirm(clearMsg)) {
+                setToBuyHistory([]);
+              }
+            }}
+            style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '5px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer' }}
+          >
+            Limpiar Vista
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -258,12 +389,27 @@ const ToBuy = () => {
                 </td>
               </tr>
             ) : (
-              (activeTab === 'pending' ? toBuy : toBuyHistory).map((item) => (
+              (activeTab === 'pending' ? toBuy : toBuyHistory)
+                .sort((a, b) => {
+                  if (activeTab === 'pending') {
+                    // Obtener fechas de entrega de los pedidos anclados
+                    const orderA = a.orderId ? orders.find(o => o.id === a.orderId) : null;
+                    const orderB = b.orderId ? orders.find(o => o.id === b.orderId) : null;
+                    
+                    const dateA = orderA ? new Date(orderA.deliveryDate) : new Date('9999-12-31');
+                    const dateB = orderB ? new Date(orderB.deliveryDate) : new Date('9999-12-31');
+                    
+                    return dateA - dateB;
+                  }
+                  return 0; // El historial se mantiene por fecha de compra (ya ordenado por push)
+                })
+                .map((item) => (
                 <tr key={item.id} className="to-buy-row">
                   <td className="product-name">
                     <div className="name-with-icon">
                       <Package size={16} className="text-primary" />
                       {item.productName}
+                      {item.productId && <span title="Vínculo Verificado por ID" style={{ marginLeft: '6px', color: '#10b981', display: 'flex', alignItems: 'center' }}><Hash size={12} /></span>}
                     </div>
                   </td>
                   <td>
@@ -277,6 +423,14 @@ const ToBuy = () => {
                           : `Comprado: ${new Date(item.dateBought).toLocaleDateString()}`}
                       </span>
                       <span className="item-notes-small">{item.notes}</span>
+                      {(() => {
+                        const description = item.orderDescription || (item.orderId ? orders.find(o => o.id === item.orderId)?.desc : null);
+                        return description ? (
+                          <span className="item-notes-small" style={{ fontStyle: 'italic', opacity: 0.7, display: 'block', marginTop: '2px' }}>
+                            " {description} "
+                          </span>
+                        ) : null;
+                      })()}
                       {item.orderId && (
                         <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                           <span style={{ fontSize: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 8px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>Pedido: <strong>{item.orderId}</strong></span>
@@ -352,6 +506,20 @@ const ToBuy = () => {
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
                   />
                   <small style={{ opacity: 0.6, marginTop: '8px', display: 'block' }}>Este será el precio asignado al producto en el inventario.</small>
+                </div>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label><CreditCard size={14} /> Método de Pago</label>
+                  <select 
+                    value={purchaseMethod}
+                    onChange={(e) => setPurchaseMethod(e.target.value)}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none' }}
+                  >
+                    <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                    <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                    <option value="USD">USD</option>
+                    <option value="USDT">USDT</option>
+                    <option value="ZINLI">ZINLI</option>
+                  </select>
                 </div>
                 <button type="submit" className="submit-item-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
                   Ingresar al Inventario

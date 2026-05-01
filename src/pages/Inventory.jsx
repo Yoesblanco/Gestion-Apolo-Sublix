@@ -23,7 +23,18 @@ import './Inventory.css';
 
 const Inventory = () => {
   const navigate = useNavigate();
-  const { products, setProducts, stockHistory = [], setStockHistory } = useAppContext();
+  const { 
+    products, 
+    setProducts, 
+    stockHistory = [], 
+    setStockHistory, 
+    transactions, 
+    setTransactions,
+    toBuy = [],
+    setToBuy,
+    orders = [],
+    setOrders
+  } = useAppContext();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -45,6 +56,12 @@ const Inventory = () => {
   const handleAddProduct = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.stock || !formData.price) return;
+
+    // Verificar si el nombre ya existe
+    if (products.some(p => p.name.toLowerCase() === formData.name.toLowerCase())) {
+      alert(`Ya existe un producto llamado "${formData.name}". Por favor usa un nombre diferente.`);
+      return;
+    }
 
     const newProduct = {
       id: Date.now(),
@@ -69,6 +86,20 @@ const Inventory = () => {
       setStockHistory(prev => [historyEntry, ...(prev || [])]);
     }
 
+    if (newProduct.stock > 0) {
+      const totalCost = newProduct.stock * (newProduct.price || 0);
+      const newTransaction = {
+        id: `TX-INV-${Date.now()}`,
+        date: new Date().toISOString(),
+        amount: totalCost,
+        type: 'Egreso',
+        method: 'EFECTIVO BCV',
+        category: 'Inventario/Materia Prima',
+        description: `Stock inicial de ${newProduct.stock} unds de ${newProduct.name}`
+      };
+      setTransactions(prev => [newTransaction, ...prev]);
+    }
+
     setProducts([newProduct, ...products]);
     setFormData({ name: '', category: 'Sublimación', stock: '', price: '' });
     setShowForm(false);
@@ -78,9 +109,24 @@ const Inventory = () => {
     const productToDelete = products.find(p => p.id === id);
     if (!productToDelete) return;
 
-    if (window.confirm(`¿Deseas eliminar "${productToDelete.name}" del inventario? Se borrará también su historial de movimientos.`)) {
+    // Verificar si el producto tiene pedidos pendientes o unidades apartadas
+    const pendingOrdersCount = orders.filter(o => 
+      (o.productId === id || o.productName === productToDelete.name) && 
+      o.status !== 'Entregado' && o.status !== 'Cancelado'
+    ).length;
+
+    const hasReserved = (productToDelete.reserved || 0) > 0;
+
+    let warningMsg = `¿Deseas eliminar "${productToDelete.name}" del inventario?`;
+    
+    if (pendingOrdersCount > 0 || hasReserved) {
+      warningMsg = `¡ADVERTENCIA! "${productToDelete.name}" tiene ${pendingOrdersCount} pedidos activos y unidades apartadas.\n\nSi lo borras, estos pedidos perderán su vínculo con el stock. ¿Estás SEGURO de que quieres eliminarlo?`;
+    }
+
+    if (window.confirm(warningMsg)) {
       setProducts(products.filter(p => p.id !== id));
-      setStockHistory(prev => (prev || []).filter(h => h.productName !== productToDelete.name));
+      // No borramos el historial de stock por defecto para mantener trazabilidad, 
+      // pero si el usuario quiere, puede usar el botón de "Depurar Historial" después.
     }
   };
 
@@ -113,6 +159,20 @@ const Inventory = () => {
       return p;
     });
 
+    if (addedQty > 0) {
+      const totalCost = addedQty * (selectedProduct.price || 0);
+      const newTransaction = {
+        id: `TX-REP-${Date.now()}`,
+        date: new Date().toISOString(),
+        amount: totalCost,
+        type: 'Egreso',
+        method: 'EFECTIVO BCV',
+        category: 'Inventario/Materia Prima',
+        description: `Reposición de ${addedQty} unds de ${selectedProduct.name}`
+      };
+      setTransactions(prev => [newTransaction, ...prev]);
+    }
+
     setProducts(updatedProducts);
     setStockHistory(prev => [historyEntry, ...(prev || [])]);
     setStockModalOpen(false);
@@ -124,17 +184,58 @@ const Inventory = () => {
     e.preventDefault();
     if (!selectedProduct || !editFormData.name || !editFormData.price) return;
 
+    const oldName = selectedProduct.name;
+    const newName = editFormData.name;
+
+    // 1. Normalizar nombres (Quitar espacios extra y primera letra Mayúscula)
+    const normalizedNewName = newName.trim();
+    
+    // Verificar si el nuevo nombre ya existe en OTRO producto (ignora mayúsculas)
+    if (normalizedNewName.toLowerCase() !== oldName.toLowerCase() && 
+        products.some(p => p.name.toLowerCase() === normalizedNewName.toLowerCase() && p.id !== selectedProduct.id)) {
+      alert(`Ya existe otro producto llamado "${normalizedNewName}". No puedes usar un nombre duplicado.`);
+      return;
+    }
+
+    // 2. Actualizar productos
     const updatedProducts = products.map(p => {
       if (p.id === selectedProduct.id) {
         return {
           ...p,
-          name: editFormData.name,
+          name: normalizedNewName,
           category: editFormData.category,
           price: parseFloat(editFormData.price)
         };
       }
       return p;
     });
+
+    // 3. ACTUALIZACIÓN EN CASCADA: Si el nombre cambió, actualizar TODO el sistema
+    if (oldName !== normalizedNewName) {
+      // Actualizar Historial de Stock
+      setStockHistory(prev => (prev || []).map(h => 
+        h.productName.toLowerCase() === oldName.toLowerCase() ? { ...h, productName: normalizedNewName } : h
+      ));
+
+      // Actualizar Lista de Por Comprar (Pendientes)
+      setToBuy(prev => (prev || []).map(item => 
+        (item.productId === selectedProduct.id || item.productName.toLowerCase() === oldName.toLowerCase()) 
+          ? { ...item, productName: normalizedNewName } : item
+      ));
+
+      // Actualizar Historial de Compras
+      setToBuyHistory(prev => (prev || []).map(item => 
+        (item.productId === selectedProduct.id || item.productName.toLowerCase() === oldName.toLowerCase()) 
+          ? { ...item, productName: normalizedNewName } : item
+      ));
+
+      // Actualizar Pedidos
+      setOrders(prev => (prev || []).map(order => 
+        (order.productId === selectedProduct.id || (order.productName && order.productName.toLowerCase() === oldName.toLowerCase()))
+          ? { ...order, productName: normalizedNewName } 
+          : order
+      ));
+    }
 
     setProducts(updatedProducts);
     setEditModalOpen(false);
@@ -150,7 +251,176 @@ const Inventory = () => {
   };
 
   return (
-    <div className="inventory animate-fade-in">
+    <>
+      {historyModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setHistoryModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '600px', maxWidth: '90vw' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Clock size={20} className="text-primary" />
+                Historial Global de Movimientos
+              </h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {stockHistory && stockHistory.length > 0 && (
+                  <button 
+                    onClick={handleCleanupHistory}
+                    style={{ 
+                      background: 'rgba(239, 68, 68, 0.1)', 
+                      color: 'var(--danger)', 
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Depurar Historial
+                  </button>
+                )}
+                <button className="close-btn" onClick={() => setHistoryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+              {(!stockHistory || stockHistory.length === 0) ? (
+                <div className="empty-state" style={{ padding: '30px 0', textAlign: 'center', opacity: 0.6 }}>
+                  <Package size={32} style={{ marginBottom: '10px' }} />
+                  <p>Aún no hay movimientos de inventario registrados.</p>
+                </div>
+              ) : (
+                <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {stockHistory.map(record => (
+                    <div key={record.id} className="history-item glass" style={{ 
+                      padding: '15px', 
+                      borderRadius: '12px', 
+                      borderLeft: `3px solid ${record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)'}` 
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <strong style={{ color: 'var(--text-color)' }}>
+                          {record.type === 'Entrada' ? 'Entrada al Inventario' : `Pedido: ${record.customer}`}
+                        </strong>
+                        <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                          {new Date(record.date).toLocaleDateString()} {new Date(record.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>
+                          Producto: <strong>{record.productName}</strong>
+                          {record.orderId && record.orderId !== 'N/A' && <span style={{opacity: 0.7, marginLeft: '10px'}}>Ord: {record.orderId}</span>}
+                        </span>
+                        <span className="qty-badge" style={{ 
+                          background: record.type === 'Entrada' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 62, 108, 0.1)', 
+                          color: record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)', 
+                          padding: '4px 10px', 
+                          borderRadius: '20px', 
+                          fontSize: '0.9rem', 
+                          fontWeight: 'bold' 
+                        }}>
+                          {record.type === 'Entrada' ? '+' : '-'}{record.quantity} unds
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {stockModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setStockModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Agregar Stock</h3>
+              <button className="close-btn" onClick={() => setStockModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '20px', fontSize: '0.9rem', opacity: 0.8 }}>
+                Ingresa la cantidad de <strong>{selectedProduct?.name}</strong> que ha llegado al inventario.
+              </p>
+              <form onSubmit={handleUpdateStock}>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label><Hash size={14} /> Cantidad a sumar</label>
+                  <input 
+                    type="number" 
+                    required 
+                    autoFocus
+                    placeholder="0" 
+                    value={stockToAdd}
+                    onChange={(e) => setStockToAdd(e.target.value)}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  />
+                </div>
+                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Confirmar Entrada
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setEditModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '450px' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Editar Producto</h3>
+              <button className="close-btn" onClick={() => setEditModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleEditProduct} className="inventory-form">
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label><Package size={14} /> Nombre del Producto</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label><Filter size={14} /> Categoría</label>
+                  <select 
+                    value={editFormData.category}
+                    onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  >
+                    <option value="Tazas">Tazas</option>
+                    <option value="Suéteres">Suéteres</option>
+                    <option value="Gorras">Gorras</option>
+                    <option value="Termos">Termos</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label><Banknote size={14} /> Precio Unitario ($)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    required 
+                    value={editFormData.price}
+                    onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  />
+                </div>
+                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Guardar Cambios
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="inventory animate-fade-in">
       <div className="page-header">
         <div className="header-title-area">
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -166,7 +436,11 @@ const Inventory = () => {
             <Clock size={20} />
             <span>Historial Global</span>
           </button>
-          <button className="add-btn" onClick={() => setShowForm(!showForm)}>
+          <button className="add-btn" onClick={() => {
+            const nextShow = !showForm;
+            setShowForm(nextShow);
+            if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}>
             {showForm ? <X size={20} /> : <Plus size={20} />}
             <span>{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
           </button>
@@ -245,19 +519,24 @@ const Inventory = () => {
             <tr>
               <th>Producto</th>
               <th>Categoría</th>
-              <th>Stock</th>
-              <th>Precio</th>
+              <th>Disponible</th>
+              <th>Apartado</th>
+              <th>Precio (Venta)</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {products.length === 0 ? (
+            {(products || []).length === 0 ? (
               <tr>
-                <td colSpan="6" className="empty-table-msg">No hay productos en el inventario</td>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                  No se encontraron productos.
+                </td>
               </tr>
             ) : (
-              products.map((p) => (
+              [...products]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((p) => (
                 <tr key={p.id} className={p.stock === 0 ? 'out-of-stock-row' : ''}>
                   <td className="product-name">
                     <div className="name-with-alert">
@@ -267,7 +546,10 @@ const Inventory = () => {
                   </td>
                   <td>{p.category}</td>
                   <td className={p.stock === 0 ? 'text-danger font-bold' : ''}>
-                    {p.stock} unidades
+                    {p.stock} unds
+                  </td>
+                  <td style={{ color: (p.reserved || 0) > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
+                    {p.reserved || 0} unds
                   </td>
                   <td>${typeof p.price === 'number' ? formatUSD(p.price) : p.price}</td>
                   <td>
@@ -287,6 +569,7 @@ const Inventory = () => {
                             price: p.price
                           });
                           setEditModalOpen(true);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }} 
                         title="Editar Producto"
                       >
@@ -480,7 +763,8 @@ const Inventory = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -15,6 +15,7 @@ import {
   Layers,
   Download,
   Trash2,
+  Edit2,
   X
 } from 'lucide-react';
 import './Sales.css';
@@ -23,12 +24,14 @@ const Sales = () => {
   const navigate = useNavigate();
   const { transactions, setTransactions, salesTotals } = useAppContext();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [pendingTx, setPendingTx] = useState(null);
+  const [selectedTx, setSelectedTx] = useState(null);
   const [filter, setFilter] = useState('all');
 
   const filteredTransactions = transactions.filter(tx => {
     if (filter === 'all') return true;
-    return tx.type === filter;
+    return tx.type.toLowerCase() === filter.toLowerCase();
   });
 
   const [formData, setFormData] = useState({
@@ -69,13 +72,66 @@ const Sales = () => {
   };
 
   const handleDeleteTransaction = (id) => {
+    const txToDelete = transactions.find(tx => tx.id === id);
+    if (txToDelete && txToDelete.orderId && txToDelete.orderId !== 'N/A') {
+      alert(`Esta transacción es automática y pertenece al pedido ${txToDelete.orderId}. Para eliminarla o modificarla, debes gestionar el pedido desde la sección de Pedidos.`);
+      return;
+    }
+
     if (window.confirm('¿Estás seguro de que deseas eliminar este movimiento? Los saldos se actualizarán automáticamente.')) {
       setTransactions(prev => prev.filter(tx => tx.id !== id));
     }
   };
 
+  const handleEditClick = (tx) => {
+    if (tx.orderId && tx.orderId !== 'N/A') {
+      alert(`Esta transacción es automática y pertenece al pedido ${tx.orderId}. Para editarla, debes gestionar el pedido desde la sección de Pedidos.`);
+      return;
+    }
+    setSelectedTx(tx);
+    setFormData({
+      product: tx.product,
+      amount: tx.amount.toString(),
+      method: tx.method,
+      type: tx.type.toLowerCase()
+    });
+    setEditModalOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUpdateTransaction = (e) => {
+    e.preventDefault();
+    const updatedTransactions = transactions.map(tx => {
+      if (tx.id === selectedTx.id) {
+        return {
+          ...tx,
+          product: formData.product,
+          amount: parseFloat(formData.amount),
+          method: formData.method,
+          type: formData.type
+        };
+      }
+      return tx;
+    });
+    setTransactions(updatedTransactions);
+    setEditModalOpen(false);
+    setSelectedTx(null);
+    setFormData({ product: '', amount: '', method: 'Efectivo', type: 'ingreso' });
+  };
+
+  const handleClearHistory = () => {
+    const confirm1 = window.confirm('¿Estás seguro de que deseas limpiar todo el historial de ventas? Esta acción es irreversible.');
+    if (!confirm1) return;
+
+    const confirm2 = window.confirm('ADVERTENCIA: Al limpiar el historial, los saldos totales en las tarjetas se reiniciarán a $0.00. ¿Deseas continuar?');
+    if (confirm2) {
+      setTransactions([]);
+      alert('Historial de ventas reiniciado correctamente.');
+    }
+  };
+
   return (
-    <div className="sales animate-fade-in">
+    <>
       {showConfirm && (
         <div className="modal-overlay">
           <div className="modal-content glass animate-fade-in">
@@ -94,6 +150,63 @@ const Sales = () => {
         </div>
       )}
 
+      {editModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass animate-fade-in">
+            <h3>Editar Transacción</h3>
+            <form onSubmit={handleUpdateTransaction} className="reporting-form" style={{ marginTop: '20px' }}>
+              <div className="form-group">
+                <label><Package size={14} /> Producto / Concepto</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.product}
+                  onChange={(e) => setFormData({...formData, product: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label><Banknote size={14} /> Monto ($)</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  required
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label><CreditCard size={14} /> Método de Pago</label>
+                <select 
+                  value={formData.method}
+                  onChange={(e) => setFormData({...formData, method: e.target.value})}
+                >
+                  <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                  <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                  <option value="USD">USD</option>
+                  <option value="USDT">USDT</option>
+                  <option value="ZINLI">ZINLI</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label><Layers size={14} /> Tipo</label>
+                <select 
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                >
+                  <option value="ingreso">Ingreso</option>
+                  <option value="egreso">Egreso</option>
+                </select>
+              </div>
+              <div className="modal-actions" style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                <button type="button" className="cancel-btn" onClick={() => setEditModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="confirm-btn">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="sales animate-fade-in">
       <div className="page-header">
         <div className="header-title-area">
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -104,10 +217,16 @@ const Sales = () => {
             <p>Informe detallado de ingresos y egresos</p>
           </div>
         </div>
-        <button className="export-btn">
-          <Download size={20} />
-          <span>Exportar</span>
-        </button>
+        <div className="header-actions">
+          <button className="clear-history-btn" onClick={handleClearHistory} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.5rem 1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s' }}>
+            <Trash2 size={18} />
+            <span>Limpiar Historial</span>
+          </button>
+          <button className="export-btn">
+            <Download size={20} />
+            <span>Exportar</span>
+          </button>
+        </div>
       </div>
 
       <div className="sales-overview">
@@ -179,10 +298,11 @@ const Sales = () => {
               value={formData.method}
               onChange={(e) => setFormData({...formData, method: e.target.value})}
             >
-              <option value="Efectivo">Efectivo</option>
-              <option value="Pago Móvil">Pago Móvil</option>
-              <option value="Zelle">Zelle</option>
-              <option value="Transferencia">Transferencia</option>
+              <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+              <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+              <option value="USD">USD</option>
+              <option value="USDT">USDT</option>
+              <option value="ZINLI">ZINLI</option>
             </select>
           </div>
           <div className="form-group">
@@ -258,20 +378,25 @@ const Sales = () => {
                   <tr key={tx.id}>
                     <td className="tx-id">{tx.id}</td>
                     <td className="tx-date">{new Date(tx.date).toLocaleDateString()}</td>
-                    <td>{tx.product}</td>
+                    <td>{tx.product || tx.description}</td>
                     <td>
-                      <span className={`type-badge ${tx.type}`}>
+                      <span className={`type-badge ${tx.type.toLowerCase()}`}>
                         {tx.type.toUpperCase()}
                       </span>
                     </td>
-                    <td className={`tx-amount ${tx.type === 'egreso' ? 'text-danger' : 'text-accent'}`}>
-                      {tx.type === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
+                    <td className={`tx-amount ${tx.type.toLowerCase() === 'egreso' ? 'text-danger' : 'text-accent'}`}>
+                      {tx.type.toLowerCase() === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
                     </td>
                     <td>{tx.method}</td>
                     <td>
-                      <button className="tx-delete-btn" onClick={() => handleDeleteTransaction(tx.id)}>
-                        <Trash2 size={16} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="tx-edit-btn" onClick={() => handleEditClick(tx)} title="Editar" style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="tx-delete-btn" onClick={() => handleDeleteTransaction(tx.id)} title="Borrar">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -280,7 +405,8 @@ const Sales = () => {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

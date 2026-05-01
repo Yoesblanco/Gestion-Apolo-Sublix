@@ -17,14 +17,13 @@ const loadFromStorage = () => {
         toBuy: Array.isArray(parsed.toBuy) ? parsed.toBuy : [],
         toBuyHistory: Array.isArray(parsed.toBuyHistory) ? parsed.toBuyHistory : [],
         stockHistory: Array.isArray(parsed.stockHistory) ? parsed.stockHistory : [],
-        theme: parsed.theme || 'dark',
-        isSidebarCollapsed: parsed.isSidebarCollapsed || false,
+        theme: parsed.theme || 'dark'
       };
     }
   } catch (e) {
     console.warn('Error leyendo localStorage:', e);
   }
-  return { transactions: [], orders: [], customers: [], products: [], toBuy: [], toBuyHistory: [], stockHistory: [], theme: 'dark', isSidebarCollapsed: false };
+  return { transactions: [], orders: [], customers: [], products: [], toBuy: [], toBuyHistory: [], stockHistory: [], theme: 'dark' };
 };
 
 const saveToStorage = (data) => {
@@ -34,8 +33,6 @@ const saveToStorage = (data) => {
     console.warn('Error guardando en localStorage:', e);
   }
 };
-
-
 
 export const AppProvider = ({ children }) => {
   const storedData = useMemo(() => loadFromStorage(), []);
@@ -48,7 +45,6 @@ export const AppProvider = ({ children }) => {
   const [toBuyHistory, setToBuyHistory] = useState(storedData.toBuyHistory);
   const [stockHistory, setStockHistory] = useState(storedData.stockHistory);
   const [theme, setTheme] = useState(storedData.theme);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(storedData.isSidebarCollapsed);
   const [toasts, setToasts] = useState([]);
 
   // Flag para evitar guardar en localStorage en el primer render (ya viene de allí)
@@ -68,8 +64,8 @@ export const AppProvider = ({ children }) => {
       isFirstRender.current = false;
       return;
     }
-    saveToStorage({ transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, theme, isSidebarCollapsed });
-  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, theme, isSidebarCollapsed]);
+    saveToStorage({ transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, theme });
+  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, theme]);
 
   // Aplicar tema al body
   useEffect(() => {
@@ -89,7 +85,6 @@ export const AppProvider = ({ children }) => {
     fetch(`http://${window.location.hostname}:5000/api/data`)
       .then(res => res.json())
       .then(data => {
-        // Fusionamos en lugar de sobrescribir
         if (Array.isArray(data.transactions)) setTransactions(prev => mergeData(prev, data.transactions));
         if (Array.isArray(data.orders)) setOrders(prev => mergeData(prev, data.orders));
         if (Array.isArray(data.customers)) setCustomers(prev => mergeData(prev, data.customers));
@@ -98,10 +93,10 @@ export const AppProvider = ({ children }) => {
         if (Array.isArray(data.toBuyHistory)) setToBuyHistory(prev => mergeData(prev, data.toBuyHistory));
         if (Array.isArray(data.stockHistory)) setStockHistory(prev => mergeData(prev, data.stockHistory));
       })
-      .catch(() => { /* Backend offline — localStorage es la fuente de verdad */ });
+      .catch(() => { });
   }, []);
 
-  // Sincronizar al backend cuando hay cambios (no bloquea, falla silenciosamente)
+  // Sincronizar al backend cuando hay cambios
   useEffect(() => {
     if (isFirstRender.current) return;
     const ctrl = new AbortController();
@@ -114,7 +109,6 @@ export const AppProvider = ({ children }) => {
     return () => ctrl.abort();
   }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory]);
 
-  // Calcular saldos reactivamente (se recalcula automáticamente cuando transactions cambia)
   const salesTotals = useMemo(() => {
     const ingresos = transactions
       .filter(t => t.type?.toLowerCase() === 'ingreso')
@@ -146,7 +140,6 @@ export const AppProvider = ({ children }) => {
     stockHistory, setStockHistory,
     salesTotals,
     theme, setTheme,
-    isSidebarCollapsed, setIsSidebarCollapsed,
     toasts, addToast,
   };
 

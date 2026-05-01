@@ -202,7 +202,23 @@ const Customers = () => {
             <p>{searchTerm ? 'No se encontraron clientes con esa búsqueda.' : 'No hay clientes registrados aún.'}</p>
           </div>
         ) : (
-          filteredCustomers.map((c) => {
+          [...filteredCustomers]
+            .sort((a, b) => {
+              // Obtener el pedido pendiente más próximo de cada cliente
+              const getUrgency = (customer) => {
+                const pending = orders.filter(o => 
+                  (o.customerId === customer.id || o.customer === customer.name) && 
+                  (o.status === 'Pendiente' || o.status === 'En Proceso')
+                );
+                if (pending.length === 0) return new Date('9999-12-31');
+                
+                const dates = pending.map(o => new Date(o.deliveryDate));
+                return new Date(Math.min(...dates));
+              };
+
+              return getUrgency(a) - getUrgency(b);
+            })
+            .map((c) => {
             const isActive = hasActiveOrder(c);
             return (
               <div key={c.id} className={`customer-card glass ${isActive ? 'has-active-order' : ''}`}>

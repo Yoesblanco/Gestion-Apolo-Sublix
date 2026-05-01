@@ -7,7 +7,7 @@ import { CheckCircle, Info, AlertCircle, Search, User, Database, ArrowRight, Sho
 import './Layout.css';
 
 const Layout = ({ children }) => {
-  const { isSidebarCollapsed, toasts, products, orders, customers } = useAppContext();
+  const { toasts, products, orders, customers } = useAppContext();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -67,7 +67,7 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-mini' : ''}`}>
+    <div className="app-container">
       {/* Elementos decorativos de fondo */}
       <div className="bg-decoration">
         <div className="blob blob-1"></div>

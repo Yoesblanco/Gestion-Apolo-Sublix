@@ -10,15 +10,12 @@ import {
   Users,
   Settings,
   LogOut,
-  ShoppingBag,
-  ChevronLeft,
-  Menu
+  ShoppingBag
 } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const { logout } = useAuth();
-  const { isSidebarCollapsed, setIsSidebarCollapsed } = useAppContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -37,7 +34,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar glass collapsed">
+    <aside className="sidebar glass">
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
