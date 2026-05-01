@@ -203,9 +203,9 @@ const Orders = () => {
                 const qtyToMove = Math.min(p.reserved || 0, oldOrder.pendingStockToSubtract);
                 const newReserved = (p.reserved || 0) - qtyToMove;
                 const newStock = p.stock + qtyToMove;
-                return { 
-                  ...p, 
-                  reserved: newReserved, 
+                return {
+                  ...p,
+                  reserved: newReserved,
                   stock: newStock,
                   status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
                 };
@@ -350,7 +350,7 @@ const Orders = () => {
 
       setProducts(updatedProducts);
       setStockHistory(updatedStockHistory);
-      
+
       // Si estamos editando un pedido FINALIZADO, actualizar la transacción en Ventas
       if (editingOrderId && oldOrder && oldOrder.status === 'Entregado') {
         setTransactions(prev => prev.map(t => {
@@ -368,7 +368,7 @@ const Orders = () => {
       // Eliminamos la creación de la transacción global aquí.
       // El abono se queda guardado en la variable 'payments' dentro del objeto 'newOrderData'
       // pero no se enviará a setTransactions hasta que el pedido pase a 'Entregado'.
-      
+
       // Actualizar la lista de compras asegurando que no haya duplicados para este pedido
       setToBuy(prev => {
         const cleanList = prev.filter(item => item.orderId !== orderId);
@@ -467,7 +467,7 @@ const Orders = () => {
     } else if (newStatus === 'Cancelado') {
       if (order) {
         let updatedProducts = [...products];
-        
+
         // 1. Devolver stock que se restó al inicio (Disponible)
         const orderHistoryEntries = (stockHistory || []).filter(h => h.orderId === id && h.type === 'Salida');
         orderHistoryEntries.forEach(record => {
@@ -491,9 +491,9 @@ const Orders = () => {
               const qtyToMove = Math.min(p.reserved || 0, order.pendingStockToSubtract);
               const newReserved = (p.reserved || 0) - qtyToMove;
               const newStock = p.stock + qtyToMove; // Mover de Apartado a Disponible
-              return { 
-                ...p, 
-                reserved: newReserved, 
+              return {
+                ...p,
+                reserved: newReserved,
                 stock: newStock,
                 status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
               };
@@ -501,7 +501,7 @@ const Orders = () => {
             return p;
           });
         }
-        
+
         setProducts(updatedProducts);
         // Limpiar el historial de salida de este pedido ya que no ocurrió
         setStockHistory((stockHistory || []).filter(h => !(h.orderId === id && h.type === 'Salida')));
@@ -607,7 +607,7 @@ const Orders = () => {
       // 2. Si el pedido no estaba finalizado ni cancelado, devolver stock
       if (!isFinished && orderToDelete.status !== 'Cancelado') {
         let updatedProducts = [...products];
-        
+
         // 1. Devolver stock que se restó al inicio
         const orderHistoryEntries = (stockHistory || []).filter(h => h.orderId === id && h.type === 'Salida');
         orderHistoryEntries.forEach(record => {
@@ -627,9 +627,9 @@ const Orders = () => {
               const qtyToMove = Math.min(p.reserved || 0, orderToDelete.pendingStockToSubtract);
               const newReserved = (p.reserved || 0) - qtyToMove;
               const newStock = p.stock + qtyToMove;
-              return { 
-                ...p, 
-                reserved: newReserved, 
+              return {
+                ...p,
+                reserved: newReserved,
                 stock: newStock,
                 status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
               };
@@ -827,35 +827,35 @@ const Orders = () => {
                 </small>
               )}
             </div>
-          {!editingOrderId && (
-            <div className="form-group">
-              <label><Banknote size={14} /> Abono Inicial ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.deposit}
-                onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
-              />
-            </div>
-          )}
-          {!editingOrderId && (
-            <div className="form-group">
-              <label><CreditCard size={14} /> Método Abono</label>
-              <select 
-                value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '0.75rem', borderRadius: '10px', outline: 'none' }}
-              >
-                <option value="EFECTIVO BCV">EFECTIVO BCV</option>
-                <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
-                <option value="USD">USD</option>
-                <option value="USDT">USDT</option>
-                <option value="ZINLI">ZINLI</option>
-              </select>
-            </div>
-          )}
-        </div>
+            {!editingOrderId && (
+              <div className="form-group">
+                <label><Banknote size={14} /> Abono Inicial ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.deposit}
+                  onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
+                />
+              </div>
+            )}
+            {!editingOrderId && (
+              <div className="form-group">
+                <label><CreditCard size={14} /> Método Abono</label>
+                <select
+                  value={formData.paymentMethod}
+                  onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '0.75rem', borderRadius: '10px', outline: 'none' }}
+                >
+                  <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                  <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                  <option value="USD">USD</option>
+                  <option value="USDT">USDT</option>
+                  <option value="ZINLI">ZINLI</option>
+                </select>
+              </div>
+            )}
+          </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button type="submit" className="submit-order-btn" style={{ flex: 1 }} disabled={isSubmitting}>
@@ -867,242 +867,242 @@ const Orders = () => {
               </button>
             )}
           </div>
-      </form>
-    </div>
+        </form>
+      </div>
     );
   };
 
   return (
     <div className="orders animate-fade-in">
-        {expiringOrders.length > 0 && (
-          <div className="alert-banner warning glass" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-            <AlertTriangle size={24} color="#f59e0b" />
-            <div>
-              <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1.1rem' }}>¡Atención! Pedidos por vencer</h4>
-              <p style={{ margin: '4px 0 0', opacity: 0.9 }}>
-                Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto.
-              </p>
-            </div>
+      {expiringOrders.length > 0 && (
+        <div className="alert-banner warning glass" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+          <AlertTriangle size={24} color="#f59e0b" />
+          <div>
+            <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1.1rem' }}>¡Atención! Pedidos por vencer</h4>
+            <p style={{ margin: '4px 0 0', opacity: 0.9 }}>
+              Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto.
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        <div className="page-header">
-          <div className="header-title-area">
-            <button className="back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h2>Gestión de Pedidos</h2>
-              <p>Seguimiento y registro de trabajos de personalización</p>
-            </div>
+      <div className="page-header">
+        <div className="header-title-area">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h2>Gestión de Pedidos</h2>
+            <p>Seguimiento y registro de trabajos de personalización</p>
           </div>
-          <button className="add-order-btn" onClick={() => {
-            if (editingOrderId) {
-              handleCancelForm();
-            } else {
-              const nextShow = !showForm;
-              setShowForm(nextShow);
-              if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}>
-            {showForm && !editingOrderId ? <X size={20} /> : <Plus size={20} />}
-            <span>{showForm && !editingOrderId ? 'Cancelar' : 'Nuevo Pedido'}</span>
-          </button>
         </div>
-
-        <div className="orders-tabs">
-          <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
-            <Clock size={18} /> En Curso ({pendingOrders.length})
-          </button>
-          <button className={`tab-btn ${activeTab === 'finished' ? 'active' : ''}`} onClick={() => setActiveTab('finished')}>
-            <CheckCircle size={18} /> Finalizados ({finishedOrders.length})
-          </button>
-        </div>
-
-        {showForm && !editingOrderId && renderOrderForm()}
-
-        <div className="orders-list">
-          {(activeTab === 'pending' ? pendingOrders : finishedOrders)
-            .sort((a, b) => {
-              if (activeTab === 'pending') {
-                // Validación de fechas de entrega
-                const dateA = a.deliveryDate ? new Date(a.deliveryDate) : new Date('9999-12-31');
-                const dateB = b.deliveryDate ? new Date(b.deliveryDate) : new Date('9999-12-31');
-                
-                // Si alguna fecha es inválida, la mandamos al final
-                const valA = isNaN(dateA.getTime()) ? new Date('9999-12-31') : dateA;
-                const valB = isNaN(dateB.getTime()) ? new Date('9999-12-31') : dateB;
-                
-                return valA - valB;
-              } else {
-                // Para finalizados, lo más reciente arriba (usando date o deliveryDate como fallback)
-                const dateA = new Date(a.date || a.deliveryDate || 0);
-                const dateB = new Date(b.date || b.deliveryDate || 0);
-                return dateB - dateA;
-              }
-            })
-            .map((order) => (
-              editingOrderId === order.id ? (
-                <div key={order.id} className="inline-form-wrapper glass animate-fade-in" style={{ marginBottom: '1.5rem' }}>
-                  {renderOrderForm()}
-                </div>
-              ) : (
-                <OrderItem 
-                  key={order.id} 
-                  order={order} 
-                  handleDeleteOrder={handleDeleteOrder}
-                  handleStatusChange={handleStatusChange}
-                  handleEditClick={handleEditClick}
-                  handleDeletePayment={handleDeletePayment}
-                  formatUSD={formatUSD}
-                  getStatusIcon={getStatusIcon}
-                  handleAddPayment={handleAddPayment}
-                />
-              )
-            ))}
-        </div>
+        <button className="add-order-btn" onClick={() => {
+          if (editingOrderId) {
+            handleCancelForm();
+          } else {
+            const nextShow = !showForm;
+            setShowForm(nextShow);
+            if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }}>
+          {showForm && !editingOrderId ? <X size={20} /> : <Plus size={20} />}
+          <span>{showForm && !editingOrderId ? 'Cancelar' : 'Nuevo Pedido'}</span>
+        </button>
       </div>
-    );
+
+      <div className="orders-tabs">
+        <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>
+          <Clock size={18} /> En Curso ({pendingOrders.length})
+        </button>
+        <button className={`tab-btn ${activeTab === 'finished' ? 'active' : ''}`} onClick={() => setActiveTab('finished')}>
+          <CheckCircle size={18} /> Finalizados ({finishedOrders.length})
+        </button>
+      </div>
+
+      {showForm && !editingOrderId && renderOrderForm()}
+
+      <div className="orders-list">
+        {(activeTab === 'pending' ? pendingOrders : finishedOrders)
+          .sort((a, b) => {
+            if (activeTab === 'pending') {
+              // Validación de fechas de entrega
+              const dateA = a.deliveryDate ? new Date(a.deliveryDate) : new Date('9999-12-31');
+              const dateB = b.deliveryDate ? new Date(b.deliveryDate) : new Date('9999-12-31');
+
+              // Si alguna fecha es inválida, la mandamos al final
+              const valA = isNaN(dateA.getTime()) ? new Date('9999-12-31') : dateA;
+              const valB = isNaN(dateB.getTime()) ? new Date('9999-12-31') : dateB;
+
+              return valA - valB;
+            } else {
+              // Para finalizados, lo más reciente arriba (usando date o deliveryDate como fallback)
+              const dateA = new Date(a.date || a.deliveryDate || 0);
+              const dateB = new Date(b.date || b.deliveryDate || 0);
+              return dateB - dateA;
+            }
+          })
+          .map((order) => (
+            editingOrderId === order.id ? (
+              <div key={order.id} className="inline-form-wrapper glass animate-fade-in" style={{ marginBottom: '1.5rem' }}>
+                {renderOrderForm()}
+              </div>
+            ) : (
+              <OrderItem
+                key={order.id}
+                order={order}
+                handleDeleteOrder={handleDeleteOrder}
+                handleStatusChange={handleStatusChange}
+                handleEditClick={handleEditClick}
+                handleDeletePayment={handleDeletePayment}
+                formatUSD={formatUSD}
+                getStatusIcon={getStatusIcon}
+                handleAddPayment={handleAddPayment}
+              />
+            )
+          ))}
+      </div>
+    </div>
+  );
 };
 
-  const OrderItem = ({ order, handleDeleteOrder, handleStatusChange, handleEditClick, formatUSD, getStatusIcon, handleAddPayment, handleDeletePayment }) => {
-    const [showPaymentInput, setShowPaymentInput] = useState(false);
-    const [showPaymentHistory, setShowPaymentHistory] = useState(false);
-    const [paymentAmount, setPaymentAmount] = useState('');
+const OrderItem = ({ order, handleDeleteOrder, handleStatusChange, handleEditClick, formatUSD, getStatusIcon, handleAddPayment, handleDeletePayment }) => {
+  const [showPaymentInput, setShowPaymentInput] = useState(false);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
 
-    const totalPaid = (order.payments || []).reduce((acc, p) => acc + p.amount, 0);
-    const balance = order.total - totalPaid;
-    const isFullyPaid = balance <= 0;
+  const totalPaid = (order.payments || []).reduce((acc, p) => acc + p.amount, 0);
+  const balance = order.total - totalPaid;
+  const isFullyPaid = balance <= 0;
 
-    return (
-      <div className="order-item glass">
-        <div className="order-main">
-          <div className="order-icon-wrapper"><ShoppingBag size={24} /></div>
-          <div className="order-info">
-            <div className="id-badge">{order.id}</div>
-            <h3>{order.customer}</h3>
-            <p className="order-product"><strong>Producto:</strong> {order.productName}</p>
-            <p className="order-desc">{order.desc}</p>
+  return (
+    <div className="order-item glass">
+      <div className="order-main">
+        <div className="order-icon-wrapper"><ShoppingBag size={24} /></div>
+        <div className="order-info">
+          <div className="id-badge">{order.id}</div>
+          <h3>{order.customer}</h3>
+          <p className="order-product"><strong>Producto:</strong> {order.productName}</p>
+          <p className="order-desc">{order.desc}</p>
+        </div>
+      </div>
+
+      <div className="order-meta">
+        <div className="order-details-grid">
+          <div className="detail-item"><span className="label">Entrega</span><span>{order.deliveryDate}</span></div>
+          <div className="detail-item"><span className="label">Cant.</span><span>{order.quantity}</span></div>
+          <div className="detail-item">
+            <span className="label">Total</span>
+            <span className="amount">${typeof order.total === 'number' ? formatUSD(order.total) : order.total}</span>
           </div>
         </div>
 
-        <div className="order-meta">
-          <div className="order-details-grid">
-            <div className="detail-item"><span className="label">Entrega</span><span>{order.deliveryDate}</span></div>
-            <div className="detail-item"><span className="label">Cant.</span><span>{order.quantity}</span></div>
-            <div className="detail-item">
-              <span className="label">Total</span>
-              <span className="amount">${typeof order.total === 'number' ? formatUSD(order.total) : order.total}</span>
-            </div>
+        <div className="payment-status-area" style={{ marginTop: '12px', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.85rem' }}>
+            <span style={{ opacity: 0.7 }}>Abonado:</span>
+            <span style={{ fontWeight: 600, color: 'var(--accent)' }}>${formatUSD(totalPaid)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+            <span style={{ opacity: 0.7 }}>Pendiente:</span>
+            <span style={{ fontWeight: 700, color: isFullyPaid ? '#10b981' : '#f59e0b' }}>
+              {isFullyPaid ? '¡Pagado!' : `$${formatUSD(balance)}`}
+            </span>
           </div>
 
-          <div className="payment-status-area" style={{ marginTop: '12px', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.85rem' }}>
-              <span style={{ opacity: 0.7 }}>Abonado:</span>
-              <span style={{ fontWeight: 600, color: 'var(--accent)' }}>${formatUSD(totalPaid)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ opacity: 0.7 }}>Pendiente:</span>
-              <span style={{ fontWeight: 700, color: isFullyPaid ? '#10b981' : '#f59e0b' }}>
-                {isFullyPaid ? '¡Pagado!' : `$${formatUSD(balance)}`}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              {!isFullyPaid && !showPaymentInput && (
-                <button
-                  className="add-payment-link"
-                  onClick={() => setShowPaymentInput(true)}
-                  style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, textDecoration: 'underline' }}
-                >
-                  + Registrar Abono
-                </button>
-              )}
-
-              {(order.payments || []).length > 0 && (
-                <button
-                  className="add-payment-link"
-                  onClick={() => setShowPaymentHistory(!showPaymentHistory)}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, textDecoration: 'underline' }}
-                >
-                  {showPaymentHistory ? 'Ocultar Historial' : 'Ver Detalle de Pagos'}
-                </button>
-              )}
-            </div>
-
-            {showPaymentHistory && (
-              <div className="payment-history-list" style={{ marginTop: '10px', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
-                {(order.payments || []).map((p, idx) => (
-                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', padding: '4px 0', borderBottom: idx < order.payments.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                    <span>{new Date(p.date).toLocaleDateString()} - {p.notes}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 600 }}>${formatUSD(p.amount)}</span>
-                      <button
-                        onClick={() => handleDeletePayment(order.id, p.id, p.transactionId)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            {!isFullyPaid && !showPaymentInput && (
+              <button
+                className="add-payment-link"
+                onClick={() => setShowPaymentInput(true)}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, textDecoration: 'underline' }}
+              >
+                + Registrar Abono
+              </button>
             )}
 
-            {showPaymentInput && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                <input
-                  type="number"
-                  placeholder="Monto..."
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddPayment(order.id, paymentAmount);
-                      setPaymentAmount('');
-                      setShowPaymentInput(false);
-                    }
-                  }}
-                  style={{ flex: 1, padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '0.8rem' }}
-                />
-                <button
-                  onClick={() => {
+            {(order.payments || []).length > 0 && (
+              <button
+                className="add-payment-link"
+                onClick={() => setShowPaymentHistory(!showPaymentHistory)}
+                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, textDecoration: 'underline' }}
+              >
+                {showPaymentHistory ? 'Ocultar Historial' : 'Ver Detalle de Pagos'}
+              </button>
+            )}
+          </div>
+
+          {showPaymentHistory && (
+            <div className="payment-history-list" style={{ marginTop: '10px', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
+              {(order.payments || []).map((p, idx) => (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', padding: '4px 0', borderBottom: idx < order.payments.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                  <span>{new Date(p.date).toLocaleDateString()} - {p.notes}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 600 }}>${formatUSD(p.amount)}</span>
+                    <button
+                      onClick={() => handleDeletePayment(order.id, p.id, p.transactionId)}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showPaymentInput && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <input
+                type="number"
+                placeholder="Monto..."
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
                     handleAddPayment(order.id, paymentAmount);
                     setPaymentAmount('');
                     setShowPaymentInput(false);
-                  }}
-                  style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.8rem', cursor: 'pointer' }}
-                >
-                  OK
-                </button>
-                <button
-                  onClick={() => setShowPaymentInput(false)}
-                  style={{ background: 'none', border: 'none', color: 'white', opacity: 0.5, cursor: 'pointer' }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-          </div>
+                  }
+                }}
+                style={{ flex: 1, padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '0.8rem' }}
+              />
+              <button
+                onClick={() => {
+                  handleAddPayment(order.id, paymentAmount);
+                  setPaymentAmount('');
+                  setShowPaymentInput(false);
+                }}
+                style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.8rem', cursor: 'pointer' }}
+              >
+                OK
+              </button>
+              <button
+                onClick={() => setShowPaymentInput(false)}
+                style={{ background: 'none', border: 'none', color: 'white', opacity: 0.5, cursor: 'pointer' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+        </div>
 
-          <div className={`order-status ${(order.status || 'Pendiente').toLowerCase()}`}>
-            {getStatusIcon(order.status || 'Pendiente')}
-            <span>{order.status || 'Pendiente'}</span>
-          </div>
-          <div className="order-actions">
-            {order.status !== 'Entregado' && (
-              <>
-                <button className="finish-btn" onClick={() => handleStatusChange(order.id, 'Entregado')} title="Finalizar"><CheckCircle size={18} /></button>
-                <button className="edit-btn" onClick={() => handleEditClick(order)} title="Editar"><Edit2 size={18} /></button>
-              </>
-            )}
-            <button className="delete-btn" onClick={() => handleDeleteOrder(order.id)} title="Eliminar"><Trash2 size={18} /></button>
-          </div>
+        <div className={`order-status ${(order.status || 'Pendiente').toLowerCase()}`}>
+          {getStatusIcon(order.status || 'Pendiente')}
+          <span>{order.status || 'Pendiente'}</span>
+        </div>
+        <div className="order-actions">
+          {order.status !== 'Entregado' && (
+            <>
+              <button className="finish-btn" onClick={() => handleStatusChange(order.id, 'Entregado')} title="Finalizar"><CheckCircle size={18} /></button>
+              <button className="edit-btn" onClick={() => handleEditClick(order)} title="Editar"><Edit2 size={18} /></button>
+            </>
+          )}
+          <button className="delete-btn" onClick={() => handleDeleteOrder(order.id)} title="Eliminar"><Trash2 size={18} /></button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
-  export default Orders;
+export default Orders;
 

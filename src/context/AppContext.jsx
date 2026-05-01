@@ -80,20 +80,29 @@ export const AppProvider = ({ children }) => {
     return Array.from(map.values());
   };
 
-  // Intentar sincronizar con el backend solo si está disponible (opcional)
+  // Carga inicial desde el servidor
   useEffect(() => {
-    fetch(`http://${window.location.hostname}:5000/api/data`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data.transactions)) setTransactions(prev => mergeData(prev, data.transactions));
-        if (Array.isArray(data.orders)) setOrders(prev => mergeData(prev, data.orders));
-        if (Array.isArray(data.customers)) setCustomers(prev => mergeData(prev, data.customers));
-        if (Array.isArray(data.products)) setProducts(prev => mergeData(prev, data.products));
-        if (Array.isArray(data.toBuy)) setToBuy(prev => mergeData(prev, data.toBuy));
-        if (Array.isArray(data.toBuyHistory)) setToBuyHistory(prev => mergeData(prev, data.toBuyHistory));
-        if (Array.isArray(data.stockHistory)) setStockHistory(prev => mergeData(prev, data.stockHistory));
-      })
-      .catch(() => { });
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`http://${window.location.hostname}:5000/api/data`);
+        if (!res.ok) throw new Error('Error al conectar con el servidor');
+        const data = await res.json();
+        
+        // Al iniciar, el servidor es la fuente de verdad definitiva
+        if (Array.isArray(data.transactions)) setTransactions(data.transactions);
+        if (Array.isArray(data.orders)) setOrders(data.orders);
+        if (Array.isArray(data.customers)) setCustomers(data.customers);
+        if (Array.isArray(data.products)) setProducts(data.products);
+        if (Array.isArray(data.toBuy)) setToBuy(data.toBuy);
+        if (Array.isArray(data.toBuyHistory)) setToBuyHistory(data.toBuyHistory);
+        if (Array.isArray(data.stockHistory)) setStockHistory(data.stockHistory);
+        
+        console.log('Datos sincronizados desde el servidor correctamente.');
+      } catch (err) {
+        console.warn('Usando datos locales: No se pudo contactar con el servidor.');
+      }
+    };
+    fetchData();
   }, []);
 
   // Sincronizar al backend cuando hay cambios
