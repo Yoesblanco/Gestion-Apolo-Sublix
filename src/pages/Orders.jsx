@@ -676,6 +676,9 @@ const Orders = () => {
       }
     }
 
+    const sortedCustomers = [...customers].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const sortedProducts = [...products].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
     return (
       <div className="order-form-container glass animate-fade-in" style={{ marginBottom: editingOrderId ? '16px' : '0' }}>
         <h3>{editingOrderId ? 'Editar Pedido' : 'Registrar Nuevo Pedido'}</h3>
@@ -697,7 +700,7 @@ const Orders = () => {
                 }}
               >
                 <option value="">Seleccionar Cliente...</option>
-                {customers.map(c => (
+                {sortedCustomers.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
                 <option value="new">+ Crear Nuevo Cliente</option>
@@ -720,7 +723,7 @@ const Orders = () => {
                 }}
               >
                 <option value="">Seleccionar Producto...</option>
-                {products.map(p => (
+                {sortedProducts.map(p => (
                   <option key={p.id} value={p.id}>
                     {p.name} (Stock: {p.stock})
                   </option>
