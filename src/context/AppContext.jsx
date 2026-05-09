@@ -79,7 +79,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://${window.location.hostname}:5000/api/data`);
+        const res = await fetch('https://gestion-apolo-sublix.onrender.com/api/data');
         if (!res.ok) throw new Error('Error al conectar con el servidor');
         const data = await res.json();
         
@@ -118,7 +118,7 @@ export const AppProvider = ({ children }) => {
     
     syncTimestamp.current = Date.now();
     
-    fetch(`http://${window.location.hostname}:5000/api/data/sync`, {
+    fetch('https://gestion-apolo-sublix.onrender.com/api/data/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

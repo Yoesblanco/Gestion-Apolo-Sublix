@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
     // Fallback al backend si existe
     try {
-      const response = await fetch(`http://${window.location.hostname}:5000/api/auth/login`, {
+      const response = await fetch('https://gestion-apolo-sublix.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password })
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
 
     // Intentar registro en backend si existe
     try {
-      await fetch(`http://${window.location.hostname}:5000/api/auth/register`, {
+      await fetch('https://gestion-apolo-sublix.onrender.com/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -142,7 +142,7 @@ export const AuthProvider = ({ children }) => {
 
     // Intentar actualizar en backend
     try {
-      await fetch(`http://${window.location.hostname}:5000/api/auth/update`, {
+      await fetch('https://gestion-apolo-sublix.onrender.com/api/auth/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newSessionUser, id: user.id, password: updatedData.password })
