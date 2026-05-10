@@ -189,42 +189,52 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/data/sync', async (req, res) => {
   try {
     const data = req.body;
-    // --- PRODUCTOS (Sincronización Inteligente) ---
+    // --- PRODUCTOS (Sincronización Inteligente con Umbral) ---
     if (data.products && Array.isArray(data.products)) {
-      if (data.products.length > 0) {
+      const { data: current } = await supabase.from('products').select('id');
+      const currentCount = current ? current.length : 0;
+      
+      if (data.products.length > 0 || currentCount <= 3) {
         const pIds = data.products.map(p => p.id);
-        // Borramos solo los que no están en la lista nueva
         await supabase.from('products').delete().not('id', 'in', pIds);
-        await supabase.from('products').upsert(data.products);
+        if (data.products.length > 0) await supabase.from('products').upsert(data.products);
       }
-      // Si la lista está vacía, NO borramos nada por seguridad (evita wipes accidentales)
     }
     
-    // --- CLIENTES (Sincronización Inteligente) ---
+    // --- CLIENTES (Sincronización Inteligente con Umbral) ---
     if (data.customers && Array.isArray(data.customers)) {
-      if (data.customers.length > 0) {
+      const { data: current } = await supabase.from('customers').select('id');
+      const currentCount = current ? current.length : 0;
+
+      if (data.customers.length > 0 || currentCount <= 3) {
         const cIds = data.customers.map(c => c.id);
         await supabase.from('customers').delete().not('id', 'in', cIds);
-        await supabase.from('customers').upsert(data.customers);
+        if (data.customers.length > 0) await supabase.from('customers').upsert(data.customers);
       }
     }
 
-    // --- TRANSACCIONES (Sincronización Inteligente) ---
+    // --- TRANSACCIONES (Sincronización Inteligente con Umbral) ---
     if (data.transactions && Array.isArray(data.transactions)) {
-      if (data.transactions.length > 0) {
+      const { data: current } = await supabase.from('transactions').select('id');
+      const currentCount = current ? current.length : 0;
+
+      if (data.transactions.length > 0 || currentCount <= 3) {
         const txs = data.transactions.map(t => ({
           id: t.id, date: t.date, amount: t.amount, type: t.type,
           category: t.category, method: t.method, description: t.description, order_id: t.orderId
         }));
         const tIds = txs.map(t => t.id);
         await supabase.from('transactions').delete().not('id', 'in', tIds);
-        await supabase.from('transactions').upsert(txs);
+        if (txs.length > 0) await supabase.from('transactions').upsert(txs);
       }
     }
 
-    // --- PEDIDOS Y PAGOS (Sincronización Inteligente) ---
+    // --- PEDIDOS Y PAGOS (Sincronización Inteligente con Umbral) ---
     if (data.orders && Array.isArray(data.orders)) {
-      if (data.orders.length > 0) {
+      const { data: current } = await supabase.from('orders').select('id');
+      const currentCount = current ? current.length : 0;
+
+      if (data.orders.length > 0 || currentCount <= 3) {
         const oIds = data.orders.map(o => o.id);
         const payments = [];
         const orders = data.orders.map(o => {
@@ -257,17 +267,17 @@ app.post('/api/data/sync', async (req, res) => {
           };
         });
 
-        // Para pagos es más complejo, pero podemos borrar los que ya no existen para estos pedidos
         const pIds = payments.map(p => p.id);
         if (pIds.length > 0) {
           await supabase.from('payments').delete().not('id', 'in', pIds).in('order_id', oIds);
+        } else if (oIds.length === 0) {
+          // Si borramos todos los pedidos, borramos todos los pagos
+          await supabase.from('payments').delete().neq('id', 0);
         }
 
         await supabase.from('orders').delete().not('id', 'in', oIds);
-        await supabase.from('orders').upsert(orders);
-        if (payments.length > 0) {
-          await supabase.from('payments').upsert(payments);
-        }
+        if (orders.length > 0) await supabase.from('orders').upsert(orders);
+        if (payments.length > 0) await supabase.from('payments').upsert(payments);
       }
     }
 
