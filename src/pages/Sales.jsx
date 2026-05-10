@@ -126,82 +126,106 @@ const Sales = () => {
     const confirm2 = window.confirm('ADVERTENCIA: Al limpiar el historial, los saldos totales en las tarjetas se reiniciarán a $0.00. ¿Deseas continuar?');
     if (confirm2) {
       setTransactions([]);
-      alert('Historial de ventas reiniciado correctamente.');
+      addToast('Historial de ventas reiniciado correctamente.', 'success');
     }
   };
 
   return (
     <>
       {showConfirm && (
-        <div className="modal-overlay">
-          <div className="modal-content glass animate-fade-in">
-            <h3>¿Confirmar Movimiento?</h3>
-            <div className="confirm-details">
-              <p><strong>Concepto:</strong> {pendingTx.product}</p>
-              <p><strong>Monto:</strong> ${formatUSD(pendingTx.amount)}</p>
-              <p><strong>Tipo:</strong> <span className={`type-badge ${pendingTx.type}`}>{pendingTx.type.toUpperCase()}</span></p>
-              <p><strong>Método:</strong> {pendingTx.method}</p>
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content glass modal-content-sm">
+            <div className="modal-header">
+              <h3>Confirmar Movimiento</h3>
             </div>
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={cancelTransaction}>Cancelar</button>
-              <button className="confirm-btn" onClick={confirmTransaction}>Confirmar</button>
+            <div className="modal-body">
+              <div className="confirm-details">
+                <p><strong>Concepto:</strong> {pendingTx.product}</p>
+                <p><strong>Monto:</strong> ${formatUSD(pendingTx.amount)}</p>
+                <p><strong>Tipo:</strong> <span className={`type-badge ${pendingTx.type}`}>{pendingTx.type.toUpperCase()}</span></p>
+                <p><strong>Método:</strong> {pendingTx.method}</p>
+              </div>
+              <div className="modal-actions">
+                <button className="cancel-inv-btn" onClick={cancelTransaction}>Cancelar</button>
+                <button className="submit-inv-btn" onClick={confirmTransaction}>Confirmar Registro</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {editModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content glass animate-fade-in">
-            <h3>Editar Transacción</h3>
-            <form onSubmit={handleUpdateTransaction} className="reporting-form" style={{ marginTop: '20px' }}>
-              <div className="form-group">
-                <label><Package size={14} /> Producto / Concepto</label>
-                <input 
-                  type="text" 
-                  required
-                  value={formData.product}
-                  onChange={(e) => setFormData({...formData, product: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label><Banknote size={14} /> Monto ($)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  required
-                  value={formData.amount}
-                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label><CreditCard size={14} /> Método de Pago</label>
-                <select 
-                  value={formData.method}
-                  onChange={(e) => setFormData({...formData, method: e.target.value})}
-                >
-                  <option value="EFECTIVO BCV">EFECTIVO BCV</option>
-                  <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
-                  <option value="USD">USD</option>
-                  <option value="USDT">USDT</option>
-                  <option value="ZINLI">ZINLI</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label><Layers size={14} /> Tipo</label>
-                <select 
-                  value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value})}
-                >
-                  <option value="ingreso">Ingreso</option>
-                  <option value="egreso">Egreso</option>
-                </select>
-              </div>
-              <div className="modal-actions" style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
-                <button type="button" className="cancel-btn" onClick={() => setEditModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="confirm-btn">Guardar Cambios</button>
-              </div>
-            </form>
+      {showForm && (
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content glass">
+            <div className="modal-header">
+              <h3>{editingId ? 'Editar Movimiento' : 'Nuevo Movimiento'}</h3>
+              <button className="close-btn" onClick={() => { setShowForm(false); setEditingId(null); }}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={editingId ? handleUpdateTransaction : handleAddTransaction} className="reporting-form">
+                <div className="form-group">
+                  <label><Package size={14} /> Concepto / Producto</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: Venta Taza" 
+                    required
+                    value={formData.product}
+                    onChange={(e) => setFormData({...formData, product: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label><Banknote size={14} /> Monto ($)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00"
+                    required
+                    value={formData.amount}
+                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label><CreditCard size={14} /> Método de Pago</label>
+                  <select 
+                    value={formData.method}
+                    onChange={(e) => setFormData({...formData, method: e.target.value})}
+                  >
+                    <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                    <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                    <option value="USD">USD</option>
+                    <option value="USDT">USDT</option>
+                    <option value="ZINLI">ZINLI</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label><Layers size={14} /> Tipo</label>
+                  <div className="type-toggle">
+                    <button 
+                      type="button"
+                      className={`type-btn ${formData.type === 'ingreso' ? 'active-ingreso' : ''}`}
+                      onClick={() => setFormData({...formData, type: 'ingreso'})}
+                    >
+                      Ingreso
+                    </button>
+                    <button 
+                      type="button"
+                      className={`type-btn ${formData.type === 'egreso' ? 'active-egreso' : ''}`}
+                      onClick={() => setFormData({...formData, type: 'egreso'})}
+                    >
+                      Egreso
+                    </button>
+                  </div>
+                </div>
+                <div className="modal-actions" style={{ marginTop: '1.5rem' }}>
+                  <button type="submit" className="submit-inv-btn">
+                    {editingId ? 'Guardar Cambios' : 'Registrar Movimiento'}
+                  </button>
+                  <button type="button" className="cancel-inv-btn" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancelar</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -218,7 +242,11 @@ const Sales = () => {
           </div>
         </div>
         <div className="header-actions">
-          <button className="clear-history-btn" onClick={handleClearHistory} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.5rem 1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.3s' }}>
+          <button className="sales-add-btn" onClick={() => setShowForm(true)}>
+            <PlusCircle size={18} />
+            <span>Nuevo Movimiento</span>
+          </button>
+          <button className="clear-history-btn" onClick={handleClearHistory}>
             <Trash2 size={18} />
             <span>Limpiar Historial</span>
           </button>
@@ -389,8 +417,8 @@ const Sales = () => {
                     </td>
                     <td>{tx.method}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="tx-edit-btn" onClick={() => handleEditClick(tx)} title="Editar" style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}>
+                      <div className="tx-actions">
+                        <button className="tx-edit-btn" onClick={() => handleEditClick(tx)} title="Editar">
                           <Edit2 size={16} />
                         </button>
                         <button className="tx-delete-btn" onClick={() => handleDeleteTransaction(tx.id)} title="Borrar">

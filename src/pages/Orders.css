@@ -79,14 +79,10 @@
   transform: rotate(90deg) scale(1.1);
 }
 
+
 .order-form-container {
-  padding: 2rem;
-  border-radius: 28px;
-  background: var(--glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  margin-bottom: 2rem;
-  animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
 }
 
 .submit-order-btn:hover {
@@ -417,23 +413,26 @@
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
+
 @media (max-width: 900px) {
-  .order-meta {
-    gap: 1.5rem;
+  .order-item {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
-  .order-date {
-    display: none;
+  
+  .order-meta {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .order-details-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
   }
 }
 
 @media (max-width: 600px) {
   .order-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  .order-meta {
-    width: 100%;
-    justify-content: space-between;
+    padding: 1.25rem;
   }
 }

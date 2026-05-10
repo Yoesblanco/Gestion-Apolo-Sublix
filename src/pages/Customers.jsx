@@ -148,50 +148,59 @@ const Customers = () => {
       </div>
 
       {showForm && (
-        <div className="customer-form-card glass animate-fade-in">
-          <h3>{editingCustomerId ? 'Editar Cliente' : 'Registrar Cliente'}</h3>
-          <form onSubmit={handleSubmitCustomer} className="customer-form">
-            <div className="form-group">
-              <label>Nombre Completo</label>
-              <input 
-                type="text" 
-                required
-                placeholder="Nombre del cliente" 
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content glass modal-content-sm">
+            <div className="modal-header">
+              <h3>{editingCustomerId ? 'Editar Cliente' : 'Registrar Cliente'}</h3>
+              <button className="close-btn" onClick={handleCancelForm}>
+                <X size={24} />
+              </button>
             </div>
-            <div className="form-group">
-              <label>Correo Electrónico</label>
-              <input 
-                type="email" 
-                placeholder="ejemplo@correo.com" 
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
+            <div className="modal-body">
+              <form onSubmit={handleSubmitCustomer} className="customer-form">
+                <div className="form-group">
+                  <label>Nombre Completo</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Nombre del cliente" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Correo Electrónico</label>
+                  <input 
+                    type="email" 
+                    placeholder="ejemplo@correo.com" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Teléfono</label>
+                  <input 
+                    type="tel" 
+                    placeholder="+58 ..." 
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Ciudad / Ubicación</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ciudad" 
+                    value={formData.city}
+                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  />
+                </div>
+                <button type="submit" className="submit-customer-btn">
+                  {editingCustomerId ? 'Guardar Cambios' : 'Guardar Cliente'}
+                </button>
+              </form>
             </div>
-            <div className="form-group">
-              <label>Teléfono</label>
-              <input 
-                type="tel" 
-                placeholder="+58 ..." 
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              />
-            </div>
-            <div className="form-group">
-              <label>Ciudad / Ubicación</label>
-              <input 
-                type="text" 
-                placeholder="Ciudad" 
-                value={formData.city}
-                onChange={(e) => setFormData({...formData, city: e.target.value})}
-              />
-            </div>
-            <button type="submit" className="submit-customer-btn">
-              {editingCustomerId ? 'Guardar Cambios' : 'Guardar Cliente'}
-            </button>
-          </form>
+          </div>
         </div>
       )}
 
@@ -265,8 +274,8 @@ const Customers = () => {
 
       {/* Modal de Historial */}
       {selectedCustomer && (
-        <div className="history-modal-overlay animate-fade-in">
-          <div className="history-modal glass animate-slide-up">
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content glass animate-slide-up">
             <div className="modal-header">
               <div className="customer-header-info">
                 <div className="modal-avatar">
@@ -277,11 +286,11 @@ const Customers = () => {
                   <p>{getCustomerOrders(selectedCustomer).length} pedidos en total</p>
                 </div>
               </div>
-              <button className="close-modal" onClick={() => setSelectedCustomer(null)}>
+              <button className="close-btn" onClick={() => setSelectedCustomer(null)}>
                 <X size={24} />
               </button>
             </div>
-            <div className="modal-content">
+            <div className="modal-body">
               {getCustomerOrders(selectedCustomer).length === 0 ? (
                 <div className="empty-history">
                   <ShoppingBag size={48} />

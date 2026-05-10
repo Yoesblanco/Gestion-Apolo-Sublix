@@ -94,6 +94,47 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+
+/* Inventory Layout Refinements */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.header-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title-with-icon h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.history-modal-content {
+  width: 650px !important;
+  max-width: 95% !important;
+}
+
+.history-modal-body {
+  max-height: 65vh !important;
+  overflow-y: auto;
+  padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
 .inv-delete-btn:hover {
   background: rgba(244, 63, 94, 0.15);
   color: var(--danger);
@@ -211,6 +252,15 @@
   }
 }
 
+<<<<<<< Updated upstream
+=======
+
+/* Global Modal System Overrides for Inventory */
+.history-modal-content {
+  max-width: 900px !important;
+}
+
+>>>>>>> Stashed changes
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
@@ -354,19 +404,52 @@
   color: var(--text);
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  backdrop-filter: blur(4px);
+
+/* RESPONSIVE OVERRIDES (At the end to ensure they win) */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-title-area {
+    width: 100%;
+  }
+  
+  .add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .table-controls {
+    flex-direction: column;
+  }
+  
+  .inventory-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 900px) {
+  .inventory-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 600px) {
+  .inventory-form {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-controls {
+    flex-direction: column;
+  }
+}
 }
 
 .modal-content {

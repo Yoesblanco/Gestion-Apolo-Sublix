@@ -152,12 +152,12 @@ const Orders = () => {
     setIsSubmitting(true);
     try {
       if (!formData.deliveryDate) {
-        alert('Por favor selecciona una fecha de entrega.');
+        addToast('Por favor selecciona una fecha de entrega.', 'error');
         setIsSubmitting(false);
         return;
       }
       if ((!isNewProduct && !formData.productId) || !formData.quantity) {
-        alert('Por favor selecciona un producto y la cantidad.');
+        addToast('Por favor selecciona un producto y la cantidad.', 'error');
         setIsSubmitting(false);
         return;
       }
@@ -166,7 +166,7 @@ const Orders = () => {
       const totalPrice = parseFloat(formData.price || 0);
 
       if (depositAmount > totalPrice) {
-        alert('El abono inicial no puede ser mayor al precio total.');
+        addToast('El abono inicial no puede ser mayor al precio total.', 'error');
         setIsSubmitting(false);
         return;
       }
@@ -238,7 +238,7 @@ const Orders = () => {
       } else {
         const selectedCustomer = customers.find(c => c.id === parseInt(formData.customerId));
         if (!selectedCustomer) {
-          alert('Por favor selecciona un cliente.');
+          addToast('Por favor selecciona un cliente.', 'error');
           setIsSubmitting(false);
           return;
         }
@@ -386,7 +386,7 @@ const Orders = () => {
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
-      alert('Error crítico detectado:\n' + error.message + '\n\nPor favor envíale esto a la IA.');
+      addToast('Error crítico detectado: ' + error.message, 'error');
     }
   };
 
@@ -532,7 +532,7 @@ const Orders = () => {
     const balance = order.total - currentPaid;
 
     if (paymentValue > balance + 0.01) {
-      alert(`El monto ($${paymentValue}) no puede ser mayor al saldo pendiente ($${formatUSD(balance)}).`);
+      addToast(`El monto ($${paymentValue}) no puede ser mayor al saldo pendiente ($${formatUSD(balance)}).`, 'error');
       return;
     }
 
@@ -680,8 +680,14 @@ const Orders = () => {
     const sortedProducts = [...products].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
     return (
-      <div className="order-form-container glass animate-fade-in" style={{ marginBottom: editingOrderId ? '16px' : '0' }}>
-        <h3>{editingOrderId ? 'Editar Pedido' : 'Registrar Nuevo Pedido'}</h3>
+      <div className="modal-overlay animate-fade-in">
+        <div className="order-form-container glass modal-content">
+          <div className="modal-header">
+            <h3>{editingOrderId ? 'Editar Pedido' : 'Registrar Nuevo Pedido'}</h3>
+            <button className="close-btn" onClick={handleCancelForm}>
+              <X size={24} />
+            </button>
+          </div>
         <form onSubmit={handleSubmitOrder} className="order-form">
           <div className="form-row">
             <div className="form-group">
@@ -735,7 +741,7 @@ const Orders = () => {
 
           {isNewProduct && (
             <div className="form-row animate-fade-in new-customer-fields">
-              <div className="form-group full-width" style={{ gridColumn: '1 / -1' }}>
+              <div className="form-group full-width">
                 <label><Package size={14} /> Nombre del Nuevo Producto</label>
                 <input
                   type="text"
@@ -787,7 +793,7 @@ const Orders = () => {
               <input
                 type="date"
                 required
-                min={new Date().toISOString().split('T')[0]} // BLOQUEO DE FECHAS PASADAS
+                min={new Date().toISOString().split('T')[0]} 
                 value={formData.deliveryDate}
                 onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
               />
@@ -825,7 +831,7 @@ const Orders = () => {
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               />
               {suggestedPrice > 0 && (
-                <small style={{ display: 'block', marginTop: '4px', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 500 }}>
+                <small className="suggested-price-label">
                   Costo de Inventario: ${formatUSD(suggestedPrice)}
                 </small>
               )}
@@ -848,7 +854,6 @@ const Orders = () => {
                 <select
                   value={formData.paymentMethod}
                   onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', padding: '0.75rem', borderRadius: '10px', outline: 'none' }}
                 >
                   <option value="EFECTIVO BCV">EFECTIVO BCV</option>
                   <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
@@ -860,15 +865,13 @@ const Orders = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="submit" className="submit-order-btn" style={{ flex: 1 }} disabled={isSubmitting}>
-              {isSubmitting ? 'Procesando...' : (editingOrderId ? 'Guardar Cambios' : 'Confirmar y Descontar Stock')}
+          <div className="form-actions-row">
+            <button type="submit" className="submit-order-btn" disabled={isSubmitting}>
+              {isSubmitting ? 'Procesando...' : (editingOrderId ? 'Guardar Cambios' : 'Confirmar Pedido')}
             </button>
-            {editingOrderId && (
-              <button type="button" className="action-btn" onClick={handleCancelForm} disabled={isSubmitting} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '12px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                Cancelar Edición
-              </button>
-            )}
+            <button type="button" className="cancel-inv-btn" onClick={handleCancelForm} disabled={isSubmitting}>
+              Cancelar
+            </button>
           </div>
         </form>
       </div>
@@ -878,11 +881,11 @@ const Orders = () => {
   return (
     <div className="orders animate-fade-in">
       {expiringOrders.length > 0 && (
-        <div className="alert-banner warning glass" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+        <div className="alert-banner glass">
           <AlertTriangle size={24} color="#f59e0b" />
           <div>
-            <h4 style={{ margin: 0, color: '#f59e0b', fontSize: '1.1rem' }}>¡Atención! Pedidos por vencer</h4>
-            <p style={{ margin: '4px 0 0', opacity: 0.9 }}>
+            <h4>¡Atención! Pedidos por vencer</h4>
+            <p>
               Tienes {expiringOrders.length} pedido(s) que deben entregarse pronto.
             </p>
           </div>
@@ -999,51 +1002,40 @@ const OrderItem = ({ order, handleDeleteOrder, handleStatusChange, handleEditCli
           </div>
         </div>
 
-        <div className="payment-status-area" style={{ marginTop: '12px', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.85rem' }}>
-            <span style={{ opacity: 0.7 }}>Abonado:</span>
-            <span style={{ fontWeight: 600, color: 'var(--accent)' }}>${formatUSD(totalPaid)}</span>
+        <div className="payment-status-area">
+          <div className="payment-row">
+            <span className="label">Abonado:</span>
+            <span className="val" style={{ color: 'var(--accent)' }}>${formatUSD(totalPaid)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-            <span style={{ opacity: 0.7 }}>Pendiente:</span>
-            <span style={{ fontWeight: 700, color: isFullyPaid ? '#10b981' : '#f59e0b' }}>
+          <div className="payment-row">
+            <span className="label">Pendiente:</span>
+            <span className="val" style={{ color: isFullyPaid ? '#10b981' : '#f59e0b' }}>
               {isFullyPaid ? '¡Pagado!' : `$${formatUSD(balance)}`}
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <div className="payment-actions">
             {!isFullyPaid && !showPaymentInput && (
-              <button
-                className="add-payment-link"
-                onClick={() => setShowPaymentInput(true)}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, textDecoration: 'underline' }}
-              >
+              <button className="payment-link" onClick={() => setShowPaymentInput(true)}>
                 + Registrar Abono
               </button>
             )}
 
             {(order.payments || []).length > 0 && (
-              <button
-                className="add-payment-link"
-                onClick={() => setShowPaymentHistory(!showPaymentHistory)}
-                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.75rem', padding: 0, textDecoration: 'underline' }}
-              >
-                {showPaymentHistory ? 'Ocultar Historial' : 'Ver Detalle de Pagos'}
+              <button className="payment-link secondary" onClick={() => setShowPaymentHistory(!showPaymentHistory)}>
+                {showPaymentHistory ? 'Ocultar Historial' : 'Ver Detalles'}
               </button>
             )}
           </div>
 
           {showPaymentHistory && (
-            <div className="payment-history-list" style={{ marginTop: '10px', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
-              {(order.payments || []).map((p, idx) => (
-                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', padding: '4px 0', borderBottom: idx < order.payments.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+            <div className="payment-history-list">
+              {(order.payments || []).map((p) => (
+                <div key={p.id} className="payment-history-item">
                   <span>{new Date(p.date).toLocaleDateString()} - {p.notes}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontWeight: 600 }}>${formatUSD(p.amount)}</span>
-                    <button
-                      onClick={() => handleDeletePayment(order.id, p.id, p.transactionId)}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
-                    >
+                    <button className="payment-del-btn" onClick={() => handleDeletePayment(order.id, p.id, p.transactionId)}>
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -1053,36 +1045,27 @@ const OrderItem = ({ order, handleDeleteOrder, handleStatusChange, handleEditCli
           )}
 
           {showPaymentInput && (
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <div className="quick-payment-area">
               <input
                 type="number"
+                autoFocus
                 placeholder="Monto..."
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    e.preventDefault();
                     handleAddPayment(order.id, paymentAmount);
                     setPaymentAmount('');
                     setShowPaymentInput(false);
                   }
                 }}
-                style={{ flex: 1, padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '0.8rem' }}
               />
-              <button
-                onClick={() => {
-                  handleAddPayment(order.id, paymentAmount);
-                  setPaymentAmount('');
-                  setShowPaymentInput(false);
-                }}
-                style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.8rem', cursor: 'pointer' }}
-              >
-                OK
-              </button>
-              <button
-                onClick={() => setShowPaymentInput(false)}
-                style={{ background: 'none', border: 'none', color: 'white', opacity: 0.5, cursor: 'pointer' }}
-              >
+              <button className="quick-payment-btn" onClick={() => {
+                handleAddPayment(order.id, paymentAmount);
+                setPaymentAmount('');
+                setShowPaymentInput(false);
+              }}> OK </button>
+              <button className="payment-del-btn" onClick={() => setShowPaymentInput(false)} style={{ color: 'var(--text-muted)' }}>
                 <X size={16} />
               </button>
             </div>

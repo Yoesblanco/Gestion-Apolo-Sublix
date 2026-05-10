@@ -161,7 +161,7 @@ const ToBuy = () => {
           }
 
           setToBuyHistory(toBuyHistory.filter(item => item.id !== id));
-          alert('Compra anulada y stock revertido correctamente.');
+          addToast('Compra anulada y stock revertido correctamente.', 'info');
         }
       } else {
         setToBuy(toBuy.filter(item => item.id !== id));
@@ -265,7 +265,7 @@ const ToBuy = () => {
     setBuyModalOpen(false);
     setSelectedItem(null);
     setPurchasePrice('');
-    alert(`Se han agregado ${qty} unidades de "${selectedItem.productName}" al inventario.`);
+    addToast(`Se han agregado ${qty} unidades de "${selectedItem.productName}" al inventario.`, 'success');
   };
 
   return (
@@ -303,13 +303,14 @@ const ToBuy = () => {
         </button>
         {activeTab === 'history' && toBuyHistory.length > 0 && (
           <button 
+            className="clear-view-btn"
             onClick={() => {
-              const clearMsg = '¡AVISO DE LIMPIEZA! Esto solo vaciará la lista visual del historial para mantenerla ordenada.\n\nNO afectará al stock del inventario ni al dinero ya registrado en ventas.\n\n¿Deseas limpiar la vista ahora?';
+              const clearMsg = '¡AVISO! Esto solo vaciará la lista visual del historial.\n\nNO afectará al stock ni al dinero registrado.\n\n¿Deseas continuar?';
               if (window.confirm(clearMsg)) {
                 setToBuyHistory([]);
+                addToast('Vista de historial limpiada.', 'info');
               }
             }}
-            style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '5px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer' }}
           >
             Limpiar Vista
           </button>
@@ -409,7 +410,7 @@ const ToBuy = () => {
                     <div className="name-with-icon">
                       <Package size={16} className="text-primary" />
                       {item.productName}
-                      {item.productId && <span title="Vínculo Verificado por ID" style={{ marginLeft: '6px', color: '#10b981', display: 'flex', alignItems: 'center' }}><Hash size={12} /></span>}
+                      {item.productId && <span title="Vínculo Verificado" className="id-verified"><Hash size={12} /></span>}
                     </div>
                   </td>
                   <td>
@@ -426,14 +427,14 @@ const ToBuy = () => {
                       {(() => {
                         const description = item.orderDescription || (item.orderId ? orders.find(o => o.id === item.orderId)?.desc : null);
                         return description ? (
-                          <span className="item-notes-small" style={{ fontStyle: 'italic', opacity: 0.7, display: 'block', marginTop: '2px' }}>
+                          <span className="order-desc-small">
                             " {description} "
                           </span>
                         ) : null;
                       })()}
                       {item.orderId && (
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '0.75rem', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 8px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>Pedido: <strong>{item.orderId}</strong></span>
+                        <div className="order-link-badge">
+                          <span>Pedido: <strong>{item.orderId}</strong></span>
                         </div>
                       )}
                     </div>
@@ -475,26 +476,26 @@ const ToBuy = () => {
       </div>
 
       {buyModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setBuyModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Registrar Compra</h3>
-              <button className="close-btn" onClick={() => setBuyModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
+        <div className="modal-overlay animate-fade-in">
+          <div className="modal-content glass modal-content-sm">
+            <div className="modal-header">
+              <h3>Registrar Compra</h3>
+              <button className="close-btn" onClick={() => setBuyModalOpen(false)}>
                 <X size={24} />
               </button>
             </div>
             <div className="modal-body">
-              <p style={{ marginBottom: '10px', fontSize: '0.9rem', opacity: 0.8 }}>
+              <p className="purchase-info">
                 Confirmar que has comprado <strong>{selectedItem?.quantity} unds</strong> de <strong>{selectedItem?.productName}</strong>.
               </p>
               {selectedItem?.orderId && (
-                <p style={{ marginBottom: '20px', fontSize: '0.85rem', padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  Este artículo está vinculado al pedido <strong>{selectedItem.orderId}</strong> ({selectedItem.customer}).
-                </p>
+                <div className="purchase-order-link">
+                  Este artículo está vinculado al pedido <strong>{selectedItem.orderId}</strong>.
+                </div>
               )}
-              <form onSubmit={handleConfirmPurchase}>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label><Banknote size={14} /> Precio de Venta/Unitario ($)</label>
+              <form onSubmit={handleConfirmPurchase} className="purchase-form">
+                <div className="form-group">
+                  <label><Banknote size={14} /> Costo Unitario ($)</label>
                   <input 
                     type="number" 
                     step="0.01" 
@@ -503,16 +504,14 @@ const ToBuy = () => {
                     placeholder="0.00" 
                     value={purchasePrice}
                     onChange={(e) => setPurchasePrice(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
                   />
-                  <small style={{ opacity: 0.6, marginTop: '8px', display: 'block' }}>Este será el precio asignado al producto en el inventario.</small>
+                  <small style={{ opacity: 0.6, marginTop: '8px', display: 'block' }}>Este precio actualizará el inventario.</small>
                 </div>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
+                <div className="form-group">
                   <label><CreditCard size={14} /> Método de Pago</label>
                   <select 
                     value={purchaseMethod}
                     onChange={(e) => setPurchaseMethod(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', outline: 'none' }}
                   >
                     <option value="EFECTIVO BCV">EFECTIVO BCV</option>
                     <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
@@ -521,7 +520,7 @@ const ToBuy = () => {
                     <option value="ZINLI">ZINLI</option>
                   </select>
                 </div>
-                <button type="submit" className="submit-item-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+                <button type="submit" className="submit-purchase-btn">
                   Ingresar al Inventario
                 </button>
               </form>

@@ -198,6 +198,7 @@ input:focus, select:focus {
   outline: none;
 }
 
+
 @media (max-width: 600px) {
   .glass, .dashboard-card {
     padding: 1rem !important;
@@ -205,4 +206,57 @@ input:focus, select:focus {
   
   h1 { font-size: 1.75rem !important; }
   h2 { font-size: 1.5rem !important; }
+
+  /* FIX: Evita zoom automático en móviles */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Sync with global modal system */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-content {
+    border-radius: 24px 24px 0 0 !important;
+    max-height: 85vh !important;
+  }
+}
+
+/* Body lock when modal is open - Definitive version for Mobile & Desktop */
+html.modal-open,
+body.modal-open,
+.main-content.modal-open {
+  overflow: hidden !important;
+  height: 100vh !important;
+  width: 100% !important;
+  position: fixed !important;
+  touch-action: none;
+}
+
+/* Premium Close Button */
+.close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  outline: none;
+}
+
+.close-btn:hover {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--danger);
+  border-color: rgba(244, 63, 94, 0.2);
+  transform: rotate(90deg) scale(1.1);
+}
 }
