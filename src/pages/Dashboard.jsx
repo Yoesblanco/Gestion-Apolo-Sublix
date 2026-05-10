@@ -12,7 +12,7 @@ import {
   Calendar
 } from 'lucide-react';
 import './Dashboard.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -44,10 +44,8 @@ const Dashboard = () => {
 
 
   const chartData = useMemo(() => {
-    // 1. Crear un mapa para acceso rápido por fecha (YYYY-MM-DD)
     const dataMap = {};
     
-    // 2. Generar las claves de los últimos 7 días
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -57,21 +55,17 @@ const Dashboard = () => {
       dataMap[key] = { ingresos: 0, egresos: 0 };
     }
 
-    // 3. Procesar transacciones una sola vez (O(n))
     (transactions || []).forEach(t => {
       if (!t?.date) return;
       try {
         let dateStr = "";
         
         if (typeof t.date === 'string') {
-          // Si ya es ISO (contiene T), cortamos en la T
           if (t.date.includes('T')) {
             dateStr = t.date.split('T')[0];
           } else {
-            // Intentamos parsear formatos como DD/MM/YYYY o YYYY-MM-DD
-            const parts = t.date.split(/[\/- \s]+/);
+            const parts = t.date.split(/[/\- \s]+/);
             if (parts.length >= 3) {
-              // Asumimos YYYY-MM-DD si la primera parte es de 4 dígitos, si no DD/MM/YYYY
               if (parts[0].length === 4) dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
               else dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             }
@@ -85,10 +79,9 @@ const Dashboard = () => {
           if (t.type?.toLowerCase() === 'ingreso') dataMap[dateStr].ingresos += amt;
           else if (t.type?.toLowerCase() === 'egreso') dataMap[dateStr].egresos += amt;
         }
-      } catch (err) { /* Ignorar fallos de parseo en registros corruptos */ }
+      } catch (err) { /* Ignorar fallos */ }
     });
 
-    // 4. Convertir mapa a arreglo para la gráfica
     return days.map(d => ({
       day: d.dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }),
       ingresos: dataMap[d.key].ingresos,
@@ -129,88 +122,80 @@ const Dashboard = () => {
             key={i} 
             className="stat-card glass clickable-card" 
             onClick={() => navigate(stat.path)}
-            style={{ '--accent-color': stat.color }}
           >
+            <div className="stat-icon" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
+              <stat.icon size={24} />
+            </div>
             <div className="stat-info">
               <span className="stat-label">{stat.label}</span>
               <span className="stat-value">{stat.value}</span>
               <span className="stat-sub">{stat.sub}</span>
             </div>
-            <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
-              <stat.icon size={24} />
-            </div>
-            <div className="card-glow"></div>
           </div>
         ))}
       </div>
 
-      <div className="dashboard-main-grid">
-        <div className="main-content-row">
-          {/* Gráfica de Evolución Temporal (Grande) */}
-          <div className="dashboard-card glass evolution-chart-section">
-            <div className="section-header-row">
-              <div className="header-titles">
-                <h3>Evolución Semanal</h3>
-              </div>
-              <div className="chart-legend-large">
-                <div className="legend-item"><span className="dot income"></span> Ingresos</div>
-                <div className="legend-item"><span className="dot expense"></span> Egresos</div>
-              </div>
-            </div>
-            
-            <div className="main-chart-container">
-              {!hasData ? (
-                <div className="empty-chart-msg">
-                  <Clock size={40} opacity={0.2} />
-                  <p>Sin movimientos</p>
-                </div>
-              ) : (
-                <div className="evolution-bars">
-                  {chartData.map((data, i) => (
-                    <div key={i} className="evolution-column">
-                      <div className="evolution-bar-group">
-                        <div 
-                          className="evo-bar income" 
-                          style={{ height: `${(data.ingresos / maxVal) * 100}%` }}
-                        >
-                          {data.ingresos > 0 && <span className="evo-tooltip">${formatUSD(data.ingresos)}</span>}
-                        </div>
-                        <div 
-                          className="evo-bar expense" 
-                          style={{ height: `${(data.egresos / maxVal) * 100}%` }}
-                        >
-                          {data.egresos > 0 && <span className="evo-tooltip">-${formatUSD(data.egresos)}</span>}
-                        </div>
-                      </div>
-                      <span className="evo-label">{data.day}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+      <div className="dashboard-grid">
+        <div className="dashboard-card glass main-chart">
+          <div className="card-header">
+            <h3>Actividad Semanal</h3>
+            <div className="chart-legend">
+              <span className="legend-item ingresos">Ingresos</span>
+              <span className="legend-item egresos">Egresos</span>
             </div>
           </div>
-
-          {/* Próximas Entregas (Al lado, más pequeño) */}
-          <div className="dashboard-card glass upcoming-orders-compact">
-            <div className="section-header-row">
-              <h3>Pedidos</h3>
-              <Link to="/pedidos" className="view-link">Ver todo</Link>
-            </div>
-            <div className="compact-orders-list">
-              {upcomingOrders.length === 0 ? (
-                <p className="empty-msg">Todo al día</p>
-              ) : (
-                upcomingOrders.slice(0, 5).map(o => (
-                  <div key={o.id} className="compact-order-item">
-                    <div className="order-info">
-                      <span className="o-client">{o.customer}</span>
-                      <span className="o-date">{o.deliveryDate}</span>
+          
+          <div className="chart-container">
+            {!hasData ? (
+              <div className="no-data-msg">No hay actividad financiera esta semana</div>
+            ) : (
+              <div className="bar-chart">
+                {chartData.map((d, i) => (
+                  <div key={i} className="bar-group">
+                    <div className="bars">
+                      <div 
+                        className="bar ingreso" 
+                        style={{ height: `${(d.ingresos / maxVal) * 100}%` }}
+                        title={`Ingreso: $${d.ingresos}`}
+                      ></div>
+                      <div 
+                        className="bar egreso" 
+                        style={{ height: `${(d.egresos / maxVal) * 100}%` }}
+                        title={`Egreso: $${d.egresos}`}
+                      ></div>
                     </div>
-                    <span className="o-amount">${formatUSD(o.total || 0)}</span>
+                    <span className="bar-label">{d.day}</span>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="dashboard-card glass upcoming-orders">
+          <div className="card-header">
+            <h3>Próximas Entregas</h3>
+            <button className="view-all-btn" onClick={() => navigate('/pedidos')}>Ver todos</button>
+          </div>
+          
+          <div className="orders-mini-list">
+            {upcomingOrders.length === 0 ? (
+              <div className="no-orders-msg">No hay pedidos pendientes de entrega</div>
+            ) : (
+              upcomingOrders.map(order => (
+                <div key={order.id} className="mini-order-card" onClick={() => navigate('/pedidos')}>
+                  <div className="order-status-dot" style={{ backgroundColor: order.status === 'Pendiente' ? '#f59e0b' : '#10b981' }}></div>
+                  <div className="mini-order-info">
+                    <span className="customer-name">{order.customerName || order.customer}</span>
+                    <span className="product-name">{order.productName}</span>
+                  </div>
+                  <div className="delivery-date">
+                    <Clock size={12} />
+                    <span>{new Date(order.deliveryDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
