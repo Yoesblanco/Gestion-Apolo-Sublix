@@ -15,6 +15,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import './ToBuy.css';
+import useScrollLock from '../hooks/useScrollLock';
 
 const ToBuy = () => {
   const { 
@@ -42,6 +43,8 @@ const ToBuy = () => {
     quantity: '',
     notes: ''
   });
+
+  useScrollLock(buyModalOpen);
 
   const handleEditClick = (item) => {
     setEditingItemId(item.id);

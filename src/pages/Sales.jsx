@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import './Sales.css';
+import useScrollLock from '../hooks/useScrollLock';
 
 const Sales = () => {
   const navigate = useNavigate();
@@ -30,6 +31,8 @@ const Sales = () => {
   const [pendingTx, setPendingTx] = useState(null);
   const [selectedTx, setSelectedTx] = useState(null);
   const [filter, setFilter] = useState('all');
+
+  useScrollLock(showConfirm || editModalOpen);
 
   const filteredTransactions = transactions.filter(tx => {
     if (filter === 'all') return true;

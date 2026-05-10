@@ -25,6 +25,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import './Orders.css';
+import useScrollLock from '../hooks/useScrollLock';
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -74,6 +75,9 @@ const Orders = () => {
 
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [isNewProduct, setIsNewProduct] = useState(false);
+
+  // Bloquea scroll del body cuando un modal/formulario está abierto
+  useScrollLock(showForm || !!editingOrderId);
 
   const getStatusIcon = (status) => {
     switch (status) {

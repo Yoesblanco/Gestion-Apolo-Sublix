@@ -19,6 +19,7 @@ import {
   Edit2
 } from 'lucide-react';
 import './Customers.css';
+import useScrollLock from '../hooks/useScrollLock';
 
 const Customers = () => {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ const Customers = () => {
     phone: '',
     city: ''
   });
+
+  useScrollLock(showForm);
 
   const handleEditClick = (customer) => {
     setEditingCustomerId(customer.id);

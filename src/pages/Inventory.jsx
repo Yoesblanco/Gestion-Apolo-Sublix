@@ -7,6 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { formatUSD } from '../utils/formatters';
+import useScrollLock from '../hooks/useScrollLock';
 import './Inventory.css';
 
 /* ── Estilos inline reutilizables para los modales ── */
@@ -105,6 +106,9 @@ const Inventory = () => {
 
   const [formData, setFormData] = useState({ name: '', category: 'Sublimación', stock: '', price: '' });
   const [editFormData, setEditFormData] = useState({ name: '', category: 'Sublimación', price: '' });
+
+  // Bloquea el scroll del body cuando cualquier modal está abierto
+  useScrollLock(addModalOpen || historyModalOpen || stockModalOpen || editModalOpen);
 
   /* ── Handlers ── */
   const handleAddProduct = (e) => {
