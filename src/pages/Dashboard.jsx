@@ -13,7 +13,8 @@ import {
   Plus,
   Clock,
   CheckCircle,
-  FileText
+  FileText,
+  Calendar
 } from 'lucide-react';
 import './Dashboard.css';
 import { Link, useNavigate } from 'react-router-dom';
@@ -25,9 +26,9 @@ const Dashboard = () => {
 
   const contextLabel = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Resumen Matutino';
-    if (hour < 18) return 'Gestión de Tarde';
-    return 'Cierre de Jornada';
+    if (hour < 12) return 'Apertura de Jornada';
+    if (hour < 18) return 'Continuidad Operativa';
+    return 'Balance de Cierre';
   }, []);
 
   const stats = [
@@ -112,8 +113,12 @@ const Dashboard = () => {
       {/* Welcome Header */}
       <div className="welcome-header">
         <div className="welcome-text">
+          <span className="dashboard-date-badge">
+            <Calendar size={14} />
+            {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </span>
           <h1>{contextLabel}</h1>
-          <p>Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Estado actual de {user?.businessName || 'Apolo Sublix'}.</p>
+          <p>Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Centro de mando de {user?.businessName || 'Apolo Sublix'}.</p>
         </div>
         <div className="quick-actions-bar">
           <button className="action-btn" style={{ background: 'var(--danger)', color: 'white', border: 'none' }} onClick={() => {
