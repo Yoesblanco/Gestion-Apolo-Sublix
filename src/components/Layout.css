@@ -487,18 +487,14 @@
 
 @media (max-width: 768px) {
   .modal-overlay {
-    padding: 0.75rem;
-    align-items: flex-end; /* En móvil sale desde abajo */
+    padding: 1rem 0.75rem;
+    align-items: center; /* Centrado vertical en mobile */
   }
 
   .modal-content {
-    max-height: 90vh;
-    border-radius: 24px 24px 0 0;
-    animation: slideUpMobile 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+    max-height: 88vh;      /* Deja espacio arriba y abajo */
+    border-radius: 20px;   /* Redondo en todos los lados */
+    overflow-y: auto;
+    animation: slideDown 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.2);
   }
-
-  @keyframes slideUpMobile {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-}
+}
