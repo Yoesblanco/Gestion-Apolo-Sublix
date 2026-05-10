@@ -84,40 +84,54 @@ export const AppProvider = ({ children }) => {
         if (!res.ok) throw new Error('Error al conectar con el servidor');
         const data = await res.json();
         
-        const serverLastUpdated = data.lastSync || 0;
         const localData = loadFromStorage();
-        const localLastUpdated = localData.lastUpdated || 0;
 
         // --- LÓGICA DE RECUPERACIÓN INTELIGENTE ---
-        const serverIsEmpty = (!data.orders || data.orders.length === 0) && (!data.customers || data.customers.length === 0);
-        const localIsEmpty = localData.orders.length === 0 && localData.customers.length === 0;
+        // El servidor es SIEMPRE la fuente de verdad cuando tiene datos.
+        // El localStorage solo se usa como respaldo offline o para recuperar
+        // una base de datos que quedó vacía por error.
+        const serverHasData = (
+          (Array.isArray(data.products)      && data.products.length > 0) ||
+          (Array.isArray(data.orders)        && data.orders.length > 0)   ||
+          (Array.isArray(data.customers)     && data.customers.length > 0) ||
+          (Array.isArray(data.transactions)  && data.transactions.length > 0)
+        );
+        const localIsEmpty = (
+          localData.orders.length === 0 &&
+          localData.customers.length === 0 &&
+          localData.products.length === 0
+        );
 
-        if (serverIsEmpty && !localIsEmpty) {
-          // CASO ESPECIAL: El servidor está vacío pero nosotros tenemos datos.
-          // Mantenemos lo local para que el efecto de sync lo suba y recupere la DB.
-          console.log('Detectada base de datos vacía. Iniciando modo recuperación desde datos locales...');
+        if (!serverHasData && !localIsEmpty) {
+          // MODO RECUPERACIÓN: El servidor está completamente vacío pero tenemos
+          // datos locales. Mantenemos lo local para que el sync lo suba.
+          console.log('⚠️ Base de datos vacía en servidor. Iniciando modo recuperación desde datos locales...');
           addToast('Recuperando datos desde este dispositivo...', 'info');
-        } else if (serverLastUpdated > localLastUpdated || localIsEmpty) {
-          // CASO NORMAL: El servidor tiene datos más nuevos o nosotros no tenemos nada.
-          console.log('Sincronizando desde servidor...');
+        } else if (serverHasData) {
+          // CASO NORMAL: El servidor tiene datos → siempre gana.
+          // Esto previene que un dispositivo con datos locales stale
+          // sobreescriba eliminaciones hechas desde otro dispositivo.
+          console.log('✅ Sincronizando desde servidor (fuente de verdad)...');
           if (Array.isArray(data.transactions)) setTransactions(data.transactions);
-          if (Array.isArray(data.orders)) setOrders(data.orders);
-          if (Array.isArray(data.customers)) setCustomers(data.customers);
-          if (Array.isArray(data.products)) setProducts(data.products);
-          if (Array.isArray(data.toBuy)) setToBuy(data.toBuy);
+          if (Array.isArray(data.orders))       setOrders(data.orders);
+          if (Array.isArray(data.customers))    setCustomers(data.customers);
+          if (Array.isArray(data.products))     setProducts(data.products);
+          if (Array.isArray(data.toBuy))        setToBuy(data.toBuy);
           if (Array.isArray(data.toBuyHistory)) setToBuyHistory(data.toBuyHistory);
           if (Array.isArray(data.stockHistory)) setStockHistory(data.stockHistory);
         } else {
-          console.log('Los datos locales ya están actualizados.');
+          // Servidor y local ambos vacíos: no hay nada que hacer.
+          console.log('ℹ️ Sin datos en servidor ni local.');
         }
         
         setDataLoadedCorrectly(true);
       } catch (err) {
-        console.warn('Usando datos locales: No se pudo contactar con el servidor.');
-        // Si hay datos locales, permitimos operar (offline mode), 
-        // pero si está todo vacío y falló el servidor, mantenemos el candado cerrado.
+        console.warn('⚠️ Usando datos locales: No se pudo contactar con el servidor.');
+        // Si hay datos locales, permitimos operar en modo offline.
+        // En este caso NO sincronizamos hacia el servidor para evitar
+        // subir datos que podrían estar desactualizados.
         const localData = loadFromStorage();
-        if (localData.orders.length > 0 || localData.customers.length > 0) {
+        if (localData.orders.length > 0 || localData.customers.length > 0 || localData.products.length > 0) {
           setDataLoadedCorrectly(true);
         }
       } finally {
