@@ -100,6 +100,7 @@ app.post('/api/auth/update', async (req, res) => {
 });
 
 // --- DATA ROUTES ---
+let serverLastUpdated = Date.now();
 
 // Obtener toda la base de datos (Formato Frontend)
 app.get('/api/data', async (req, res) => {
@@ -174,7 +175,7 @@ app.get('/api/data', async (req, res) => {
         orderId: h.order_id, customer: h.customer, dateBought: h.date_bought,
         purchasePrice: h.purchase_price, productId: h.product_id, transactionId: h.transaction_id
       })),
-      lastSync: 1 // Usamos un valor fijo bajo para que el frontend priorice lo local a menos que no tenga nada
+      lastSync: serverLastUpdated
     };
 
     res.json(dbFormat);
@@ -303,7 +304,8 @@ app.post('/api/data/sync', async (req, res) => {
       }
     }
 
-    res.json({ message: 'Datos sincronizados a Supabase con éxito' });
+    serverLastUpdated = data.timestamp || Date.now();
+    res.json({ message: 'Datos sincronizados a Supabase con éxito', lastSync: serverLastUpdated });
   } catch (error) {
     console.error('Error syncing to Supabase:', error);
     res.status(500).json({ message: 'Error syncing database' });
