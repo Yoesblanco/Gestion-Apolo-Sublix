@@ -101,6 +101,7 @@ const Inventory = () => {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [stockModalOpen,   setStockModalOpen]   = useState(false);
   const [editModalOpen,    setEditModalOpen]     = useState(false);
+  const [purchasePrice,    setPurchasePrice]    = useState('');
   const [selectedProduct,  setSelectedProduct]  = useState(null);
   const [stockToAdd,       setStockToAdd]       = useState('');
 
@@ -174,12 +175,16 @@ const Inventory = () => {
       quantity: qty, orderId: 'N/A', notes: 'Llegada de nueva mercancía'
     }, ...(prev || [])]);
 
-    if (qty > 0) {
+    if (qty > 0 && parseFloat(purchasePrice) > 0) {
+      const totalCost = qty * parseFloat(purchasePrice);
       setTransactions(prev => [{
-        id: `TX-REP-${Date.now()}`, date: new Date().toISOString(),
-        amount: qty * (selectedProduct.price || 0),
-        type: 'Egreso', method: 'EFECTIVO BCV', category: 'Inventario/Materia Prima',
-        description: `Reposición de ${qty} unds de ${selectedProduct.name}`
+        id: `TX-REP-${Date.now()}`, 
+        date: new Date().toISOString(),
+        amount: totalCost,
+        type: 'Egreso', 
+        method: 'EFECTIVO BCV', 
+        category: 'Inventario/Materia Prima',
+        description: `Compra de ${qty} unds de ${selectedProduct.name} ($${purchasePrice}/ud)`
       }, ...prev]);
     }
 
@@ -189,6 +194,7 @@ const Inventory = () => {
     ));
     setStockModalOpen(false);
     setStockToAdd('');
+    setPurchasePrice('');
     setSelectedProduct(null);
   };
 
@@ -362,10 +368,25 @@ const Inventory = () => {
                 <input style={MODAL_INPUT} type="number" required autoFocus placeholder="0" min="1"
                   value={stockToAdd} onChange={e => setStockToAdd(e.target.value)} />
               </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 20px', background: 'rgba(16,185,129,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Stock Actual: <strong>{selectedProduct?.stock || 0}</strong></span>
-                <span>→</span>
-                <span>Nuevo Stock: <strong style={{ color: 'var(--accent)' }}>{(selectedProduct?.stock || 0) + (parseInt(stockToAdd) || 0)}</strong></span>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Costo Unitario de Compra ($)</label>
+                <input style={MODAL_INPUT} type="number" step="0.01" placeholder="0.00 (Opcional)" min="0"
+                  value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} />
+                <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px' }}>
+                  Si ingresas un costo, se registrará automáticamente un <b>Egreso</b> en Finanzas.
+                </small>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 20px', background: 'rgba(16,185,129,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.1)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Stock Actual: <strong>{selectedProduct?.stock || 0}</strong></span>
+                  <span>→ Nuevo: <strong style={{ color: 'var(--accent)' }}>{(selectedProduct?.stock || 0) + (parseInt(stockToAdd) || 0)}</strong></span>
+                </div>
+                {parseFloat(purchasePrice) > 0 && (
+                  <div style={{ borderTop: '1px solid rgba(16,185,129,0.2)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Inversión Total:</span>
+                    <strong style={{ color: 'var(--danger)' }}>${formatUSD(parseInt(stockToAdd || 0) * parseFloat(purchasePrice))}</strong>
+                  </div>
+                )}
               </p>
               <button type="submit" style={MODAL_BTN_SUCCESS}>Confirmar Entrada</button>
             </form>
