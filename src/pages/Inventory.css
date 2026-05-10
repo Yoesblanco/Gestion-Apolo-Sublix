@@ -224,7 +224,11 @@
 .table-container {
   border-radius: 16px;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  position: relative;
+  border: 1px solid var(--border);
 }
 
 @media (max-width: 768px) {
@@ -264,16 +268,15 @@
   text-align: left;
 }
 
-@media (max-width: 600px) {
-  .inventory-table th, 
-  .inventory-table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-
+@media (max-width: 900px) {
   .inventory-table {
     min-width: 900px;
+  }
+  
+  .inventory-table th,
+  .inventory-table td {
+    padding: 1rem 0.75rem;
+    white-space: nowrap;
   }
 
   .table-container::-webkit-scrollbar {
@@ -429,14 +432,7 @@
 }
 
 
-@media (max-width: 900px) {
-  .inventory-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-}
+/* Media queries consolidadas arriba */
 
 @media (max-width: 600px) {
   .inventory-form {
