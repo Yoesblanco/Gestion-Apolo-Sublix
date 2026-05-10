@@ -27,6 +27,65 @@ import {
 import './Orders.css';
 import useScrollLock from '../hooks/useScrollLock';
 
+/* ── Estilos inline reutilizables para los modales ── */
+const MODAL_OVERLAY_STYLE = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
+  zIndex: 3000,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '1rem', boxSizing: 'border-box', overflowY: 'auto'
+};
+
+const modalContentStyle = (maxW = '480px') => ({
+  background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '20px', width: '100%', maxWidth: maxW,
+  maxHeight: '90vh', overflowY: 'auto', padding: '28px',
+  boxSizing: 'border-box', margin: 'auto'
+});
+
+const MODAL_INPUT = {
+  width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
+  background: 'var(--surface)', border: '1px solid var(--border)',
+  color: 'var(--text)', fontSize: '0.95rem', boxSizing: 'border-box'
+};
+
+const MODAL_LABEL = {
+  display: 'flex', alignItems: 'center', gap: '6px',
+  fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
+  marginBottom: '6px'
+};
+
+const MODAL_GROUP = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
+
+const MODAL_BTN_PRIMARY = {
+  width: '100%', padding: '0.85rem', borderRadius: '12px',
+  background: 'linear-gradient(135deg, var(--primary), #0284c7)',
+  color: 'white', border: 'none', fontWeight: 700,
+  fontSize: '1rem', cursor: 'pointer', marginTop: '4px'
+};
+
+const ModalHeader = ({ icon: Icon, title, subtitle, onClose }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {Icon && (
+        <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
+          <Icon size={20} style={{ color: 'var(--primary)' }} />
+        </div>
+      )}
+      <div>
+        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{title}</h3>
+        {subtitle && <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{subtitle}</p>}
+      </div>
+    </div>
+    <button onClick={onClose} style={{
+      background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+      color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
+      width: '36px', height: '36px', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', flexShrink: 0
+    }}><X size={18} /></button>
+  </div>
+);
+
 const Orders = () => {
   const navigate = useNavigate();
   const {
@@ -681,19 +740,20 @@ const Orders = () => {
     const sortedProducts = [...products].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
     return (
-      <div className="modal-overlay animate-fade-in">
-        <div className="order-form-container glass modal-content">
-          <div className="modal-header">
-            <h3>{editingOrderId ? 'Editar Pedido' : 'Registrar Nuevo Pedido'}</h3>
-            <button className="close-btn" onClick={handleCancelForm}>
-              <X size={24} />
-            </button>
-          </div>
-        <form onSubmit={handleSubmitOrder} className="order-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label><User size={14} /> Cliente</label>
+      <div style={MODAL_OVERLAY_STYLE} onClick={handleCancelForm}>
+        <div style={modalContentStyle('550px')} onClick={e => e.stopPropagation()}>
+          <ModalHeader 
+            icon={ShoppingBag} 
+            title={editingOrderId ? 'Editar Pedido' : 'Registrar Nuevo Pedido'} 
+            subtitle="Configura los detalles del trabajo" 
+            onClose={handleCancelForm} 
+          />
+          
+          <form onSubmit={handleSubmitOrder} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={MODAL_GROUP}>
+              <label style={MODAL_LABEL}><User size={14} /> Cliente</label>
               <select
+                style={MODAL_INPUT}
                 required
                 value={isNewCustomer ? "new" : formData.customerId}
                 onChange={(e) => {
@@ -707,15 +767,32 @@ const Orders = () => {
                 }}
               >
                 <option value="">Seleccionar Cliente...</option>
-                {sortedCustomers.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {sortedCustomers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 <option value="new">+ Crear Nuevo Cliente</option>
               </select>
             </div>
-            <div className="form-group">
-              <label><Package size={14} /> Producto</label>
+
+            {isNewCustomer && (
+              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', border: '1px solid var(--border)', marginBottom: '16px' }}>
+                <div style={MODAL_GROUP}>
+                  <label style={MODAL_LABEL}><User size={14} /> Nombre del Nuevo Cliente</label>
+                  <input style={MODAL_INPUT} type="text" required placeholder="Nombre completo" value={formData.newName} onChange={(e) => setFormData({ ...formData, newName: e.target.value })} />
+                </div>
+                <div style={MODAL_GROUP}>
+                  <label style={MODAL_LABEL}><Phone size={14} /> Teléfono</label>
+                  <input style={MODAL_INPUT} type="tel" placeholder="+58 ..." value={formData.newPhone} onChange={(e) => setFormData({ ...formData, newPhone: e.target.value })} />
+                </div>
+                <div style={MODAL_GROUP}>
+                  <label style={MODAL_LABEL}><Mail size={14} /> Correo</label>
+                  <input style={MODAL_INPUT} type="email" placeholder="ejemplo@correo.com" value={formData.newEmail} onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })} />
+                </div>
+              </div>
+            )}
+
+            <div style={MODAL_GROUP}>
+              <label style={MODAL_LABEL}><Package size={14} /> Producto</label>
               <select
+                style={MODAL_INPUT}
                 required
                 value={isNewProduct ? "new_product" : formData.productId}
                 onChange={(e) => {
@@ -731,152 +808,65 @@ const Orders = () => {
               >
                 <option value="">Seleccionar Producto...</option>
                 {sortedProducts.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} (Stock: {p.stock})
-                  </option>
+                  <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>
                 ))}
                 <option value="new_product">+ Producto Nuevo / Sin Stock</option>
               </select>
             </div>
-          </div>
 
-          {isNewProduct && (
-            <div className="form-row animate-fade-in new-customer-fields">
-              <div className="form-group full-width">
-                <label><Package size={14} /> Nombre del Nuevo Producto</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Escribe el nombre del producto que falta..."
-                  value={formData.newProductName}
-                  onChange={(e) => setFormData({ ...formData, newProductName: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-          {isNewCustomer && (
-            <div className="form-row animate-fade-in new-customer-fields">
-              <div className="form-group">
-                <label><User size={14} /> Nombre del Nuevo Cliente</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nombre completo"
-                  value={formData.newName}
-                  onChange={(e) => setFormData({ ...formData, newName: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label><Phone size={14} /> Teléfono</label>
-                <input
-                  type="tel"
-                  placeholder="+58 ..."
-                  value={formData.newPhone}
-                  onChange={(e) => setFormData({ ...formData, newPhone: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label><Mail size={14} /> Correo</label>
-                <input
-                  type="email"
-                  placeholder="ejemplo@correo.com"
-                  value={formData.newEmail}
-                  onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="form-row">
-            <div className="form-group">
-              <label><Calendar size={14} /> Fecha Entrega</label>
-              <input
-                type="date"
-                required
-                min={new Date().toISOString().split('T')[0]} 
-                value={formData.deliveryDate}
-                onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label><Hash size={14} /> Cantidad</label>
-              <input
-                type="number"
-                min="1"
-                required
-                placeholder="0"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label><FileText size={14} /> Detalles</label>
-              <input
-                type="text"
-                placeholder="Descripción opcional..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label><Banknote size={14} /> Precio Total ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              />
-              {suggestedPrice > 0 && (
-                <small className="suggested-price-label">
-                  Costo de Inventario: ${formatUSD(suggestedPrice)}
-                </small>
-              )}
-            </div>
-            {!editingOrderId && (
-              <div className="form-group">
-                <label><Banknote size={14} /> Abono Inicial ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.deposit}
-                  onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
-                />
+            {isNewProduct && (
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Package size={14} /> Nombre del Nuevo Producto</label>
+                <input style={MODAL_INPUT} type="text" required placeholder="Nombre del producto..." value={formData.newProductName} onChange={(e) => setFormData({ ...formData, newProductName: e.target.value })} />
               </div>
             )}
-            {!editingOrderId && (
-              <div className="form-group">
-                <label><CreditCard size={14} /> Método Abono</label>
-                <select
-                  value={formData.paymentMethod}
-                  onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                >
-                  <option value="EFECTIVO BCV">EFECTIVO BCV</option>
-                  <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
-                  <option value="USD">USD</option>
-                  <option value="USDT">USDT</option>
-                  <option value="ZINLI">ZINLI</option>
-                </select>
-              </div>
-            )}
-          </div>
 
-          <div className="form-actions-row">
-            <button type="submit" className="submit-order-btn" disabled={isSubmitting}>
+            <div style={MODAL_GROUP}>
+              <label style={MODAL_LABEL}><Calendar size={14} /> Fecha Entrega</label>
+              <input style={MODAL_INPUT} type="date" required min={new Date().toISOString().split('T')[0]} value={formData.deliveryDate} onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })} />
+            </div>
+
+            <div style={MODAL_GROUP}>
+              <label style={MODAL_LABEL}><Hash size={14} /> Cantidad</label>
+              <input style={MODAL_INPUT} type="number" min="1" required placeholder="0" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} />
+            </div>
+
+            <div style={MODAL_GROUP}>
+              <label style={MODAL_LABEL}><FileText size={14} /> Detalles / Descripción</label>
+              <input style={MODAL_INPUT} type="text" placeholder="Ej: Sublimación de logo..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            </div>
+
+            <div style={MODAL_GROUP}>
+              <label style={MODAL_LABEL}><Banknote size={14} /> Precio Total ($)</label>
+              <input style={MODAL_INPUT} type="number" step="0.01" placeholder="0.00" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+              {suggestedPrice > 0 && <small style={{ color: 'var(--primary)', marginTop: '4px', fontSize: '0.75rem' }}>Costo base Sugerido: ${formatUSD(suggestedPrice)}</small>}
+            </div>
+
+            {!editingOrderId && (
+              <>
+                <div style={MODAL_GROUP}>
+                  <label style={MODAL_LABEL}><Banknote size={14} /> Abono Inicial ($)</label>
+                  <input style={MODAL_INPUT} type="number" step="0.01" placeholder="0.00" value={formData.deposit} onChange={(e) => setFormData({ ...formData, deposit: e.target.value })} />
+                </div>
+                <div style={MODAL_GROUP}>
+                  <label style={MODAL_LABEL}><CreditCard size={14} /> Método de Pago (Abono)</label>
+                  <select style={MODAL_INPUT} value={formData.paymentMethod} onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}>
+                    <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                    <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                    <option value="USD">USD</option>
+                    <option value="USDT">USDT</option>
+                    <option value="ZINLI">ZINLI</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            <button type="submit" style={MODAL_BTN_PRIMARY} disabled={isSubmitting}>
               {isSubmitting ? 'Procesando...' : (editingOrderId ? 'Guardar Cambios' : 'Confirmar Pedido')}
             </button>
-            <button type="button" className="cancel-inv-btn" onClick={handleCancelForm} disabled={isSubmitting}>
-              Cancelar
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
     );
   };
 

@@ -21,6 +21,65 @@ import {
 import './Sales.css';
 import useScrollLock from '../hooks/useScrollLock';
 
+/* ── Estilos inline reutilizables para los modales ── */
+const MODAL_OVERLAY_STYLE = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
+  zIndex: 3000,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '1rem', boxSizing: 'border-box', overflowY: 'auto'
+};
+
+const modalContentStyle = (maxW = '480px') => ({
+  background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '20px', width: '100%', maxWidth: maxW,
+  maxHeight: '90vh', overflowY: 'auto', padding: '28px',
+  boxSizing: 'border-box', margin: 'auto'
+});
+
+const MODAL_INPUT = {
+  width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
+  background: 'var(--surface)', border: '1px solid var(--border)',
+  color: 'var(--text)', fontSize: '0.95rem', boxSizing: 'border-box'
+};
+
+const MODAL_LABEL = {
+  display: 'flex', alignItems: 'center', gap: '6px',
+  fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
+  marginBottom: '6px'
+};
+
+const MODAL_GROUP = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
+
+const MODAL_BTN_PRIMARY = {
+  width: '100%', padding: '0.85rem', borderRadius: '12px',
+  background: 'linear-gradient(135deg, var(--primary), #0284c7)',
+  color: 'white', border: 'none', fontWeight: 700,
+  fontSize: '1rem', cursor: 'pointer', marginTop: '4px'
+};
+
+const ModalHeader = ({ icon: Icon, title, subtitle, onClose }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {Icon && (
+        <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
+          <Icon size={20} style={{ color: 'var(--primary)' }} />
+        </div>
+      )}
+      <div>
+        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{title}</h3>
+        {subtitle && <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{subtitle}</p>}
+      </div>
+    </div>
+    <button onClick={onClose} style={{
+      background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+      color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
+      width: '36px', height: '36px', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', flexShrink: 0
+    }}><X size={18} /></button>
+  </div>
+);
+
 const Sales = () => {
   const navigate = useNavigate();
   const { transactions, setTransactions, salesTotals, addToast } = useAppContext();
@@ -32,7 +91,7 @@ const Sales = () => {
   const [selectedTx, setSelectedTx] = useState(null);
   const [filter, setFilter] = useState('all');
 
-  useScrollLock(showConfirm || editModalOpen);
+  useScrollLock(showConfirm || editModalOpen || showForm);
 
   const filteredTransactions = transactions.filter(tx => {
     if (filter === 'all') return true;
@@ -160,77 +219,85 @@ const Sales = () => {
       )}
 
       {showForm && (
-        <div className="modal-overlay animate-fade-in">
-          <div className="modal-content glass">
-            <div className="modal-header">
-              <h3>{editingId ? 'Editar Movimiento' : 'Nuevo Movimiento'}</h3>
-              <button className="close-btn" onClick={() => { setShowForm(false); setEditingId(null); }}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={editingId ? handleUpdateTransaction : handleAddTransaction} className="reporting-form">
-                <div className="form-group">
-                  <label><Package size={14} /> Concepto / Producto</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Venta Taza" 
-                    required
-                    value={formData.product}
-                    onChange={(e) => setFormData({...formData, product: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <label><Banknote size={14} /> Monto ($)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00"
-                    required
-                    value={formData.amount}
-                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <label><CreditCard size={14} /> Método de Pago</label>
-                  <select 
-                    value={formData.method}
-                    onChange={(e) => setFormData({...formData, method: e.target.value})}
+        <div style={MODAL_OVERLAY_STYLE} onClick={() => { setShowForm(false); setEditingId(null); }}>
+          <div style={modalContentStyle('450px')} onClick={e => e.stopPropagation()}>
+            <ModalHeader 
+              icon={TrendingUp} 
+              title={editingId ? 'Editar Movimiento' : 'Nuevo Movimiento'} 
+              subtitle="Registra ingresos o egresos financieros" 
+              onClose={() => { setShowForm(false); setEditingId(null); }} 
+            />
+            <form onSubmit={editingId ? handleUpdateTransaction : handleAddTransaction}>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Package size={14} /> Concepto / Producto</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="text" 
+                  placeholder="Ej: Venta Taza" 
+                  required
+                  value={formData.product}
+                  onChange={(e) => setFormData({...formData, product: e.target.value})}
+                />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Monto ($)</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="number" 
+                  step="0.01" 
+                  placeholder="0.00"
+                  required
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><CreditCard size={14} /> Método de Pago</label>
+                <select 
+                  style={MODAL_INPUT}
+                  value={formData.method}
+                  onChange={(e) => setFormData({...formData, method: e.target.value})}
+                >
+                  <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                  <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                  <option value="USD">USD</option>
+                  <option value="USDT">USDT</option>
+                  <option value="ZINLI">ZINLI</option>
+                </select>
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Layers size={14} /> Tipo de Movimiento</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    type="button"
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid var(--border)',
+                      background: formData.type === 'ingreso' ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.03)',
+                      color: formData.type === 'ingreso' ? 'var(--accent)' : 'var(--text-muted)',
+                      fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                    }}
+                    onClick={() => setFormData({...formData, type: 'ingreso'})}
                   >
-                    <option value="EFECTIVO BCV">EFECTIVO BCV</option>
-                    <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
-                    <option value="USD">USD</option>
-                    <option value="USDT">USDT</option>
-                    <option value="ZINLI">ZINLI</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label><Layers size={14} /> Tipo</label>
-                  <div className="type-toggle">
-                    <button 
-                      type="button"
-                      className={`type-btn ${formData.type === 'ingreso' ? 'active-ingreso' : ''}`}
-                      onClick={() => setFormData({...formData, type: 'ingreso'})}
-                    >
-                      Ingreso
-                    </button>
-                    <button 
-                      type="button"
-                      className={`type-btn ${formData.type === 'egreso' ? 'active-egreso' : ''}`}
-                      onClick={() => setFormData({...formData, type: 'egreso'})}
-                    >
-                      Egreso
-                    </button>
-                  </div>
-                </div>
-                <div className="modal-actions" style={{ marginTop: '1.5rem' }}>
-                  <button type="submit" className="submit-inv-btn">
-                    {editingId ? 'Guardar Cambios' : 'Registrar Movimiento'}
+                    Ingreso
                   </button>
-                  <button type="button" className="cancel-inv-btn" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancelar</button>
+                  <button 
+                    type="button"
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid var(--border)',
+                      background: formData.type === 'egreso' ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.03)',
+                      color: formData.type === 'egreso' ? 'var(--danger)' : 'var(--text-muted)',
+                      fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                    }}
+                    onClick={() => setFormData({...formData, type: 'egreso'})}
+                  >
+                    Egreso
+                  </button>
                 </div>
-              </form>
-            </div>
+              </div>
+              <button type="submit" style={MODAL_BTN_PRIMARY}>
+                {editingId ? 'Guardar Cambios' : 'Registrar Movimiento'}
+              </button>
+            </form>
           </div>
         </div>
       )}

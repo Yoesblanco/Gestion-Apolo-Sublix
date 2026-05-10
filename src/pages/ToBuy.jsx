@@ -17,6 +17,70 @@ import {
 import './ToBuy.css';
 import useScrollLock from '../hooks/useScrollLock';
 
+/* ── Estilos inline reutilizables para los modales ── */
+const MODAL_OVERLAY_STYLE = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
+  zIndex: 3000,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '1rem', boxSizing: 'border-box', overflowY: 'auto'
+};
+
+const modalContentStyle = (maxW = '480px') => ({
+  background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '20px', width: '100%', maxWidth: maxW,
+  maxHeight: '90vh', overflowY: 'auto', padding: '28px',
+  boxSizing: 'border-box', margin: 'auto'
+});
+
+const MODAL_INPUT = {
+  width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
+  background: 'var(--surface)', border: '1px solid var(--border)',
+  color: 'var(--text)', fontSize: '0.95rem', boxSizing: 'border-box'
+};
+
+const MODAL_LABEL = {
+  display: 'flex', alignItems: 'center', gap: '6px',
+  fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
+  marginBottom: '6px'
+};
+
+const MODAL_GROUP = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
+
+const MODAL_BTN_PRIMARY = {
+  width: '100%', padding: '0.85rem', borderRadius: '12px',
+  background: 'linear-gradient(135deg, var(--primary), #0284c7)',
+  color: 'white', border: 'none', fontWeight: 700,
+  fontSize: '1rem', cursor: 'pointer', marginTop: '4px'
+};
+
+const MODAL_BTN_SUCCESS = {
+  ...MODAL_BTN_PRIMARY,
+  background: 'linear-gradient(135deg, var(--accent), #059669)'
+};
+
+const ModalHeader = ({ icon: Icon, title, subtitle, onClose }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {Icon && (
+        <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
+          <Icon size={20} style={{ color: 'var(--primary)' }} />
+        </div>
+      )}
+      <div>
+        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{title}</h3>
+        {subtitle && <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{subtitle}</p>}
+      </div>
+    </div>
+    <button onClick={onClose} style={{
+      background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+      color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
+      width: '36px', height: '36px', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', flexShrink: 0
+    }}><X size={18} /></button>
+  </div>
+);
+
 const ToBuy = () => {
   const { 
     toBuy = [], 
@@ -480,55 +544,58 @@ const ToBuy = () => {
       </div>
 
       {buyModalOpen && (
-        <div className="modal-overlay animate-fade-in">
-          <div className="modal-content glass modal-content-sm">
-            <div className="modal-header">
-              <h3>Registrar Compra</h3>
-              <button className="close-btn" onClick={() => setBuyModalOpen(false)}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p className="purchase-info">
-                Confirmar que has comprado <strong>{selectedItem?.quantity} unds</strong> de <strong>{selectedItem?.productName}</strong>.
+        <div style={MODAL_OVERLAY_STYLE} onClick={() => setBuyModalOpen(false)}>
+          <div style={modalContentStyle('450px')} onClick={e => e.stopPropagation()}>
+            <ModalHeader 
+              icon={ShoppingBag} 
+              title="Registrar Compra" 
+              subtitle={`Producto: ${selectedItem?.productName}`} 
+              onClose={() => setBuyModalOpen(false)} 
+            />
+            
+            <div style={{ marginBottom: '20px', padding: '12px', background: 'rgba(14,165,233,0.05)', borderRadius: '12px', border: '1px solid rgba(14,165,233,0.1)' }}>
+              <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                Vas a registrar <strong>{selectedItem?.quantity} unds</strong>.
               </p>
               {selectedItem?.orderId && (
-                <div className="purchase-order-link">
-                  Este artículo está vinculado al pedido <strong>{selectedItem.orderId}</strong>.
-                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--primary)' }}>
+                  Vinculado al pedido: <strong>{selectedItem.orderId}</strong>
+                </p>
               )}
-              <form onSubmit={handleConfirmPurchase} className="purchase-form">
-                <div className="form-group">
-                  <label><Banknote size={14} /> Costo Unitario ($)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    required 
-                    autoFocus
-                    placeholder="0.00" 
-                    value={purchasePrice}
-                    onChange={(e) => setPurchasePrice(e.target.value)}
-                  />
-                  <small style={{ opacity: 0.6, marginTop: '8px', display: 'block' }}>Este precio actualizará el inventario.</small>
-                </div>
-                <div className="form-group">
-                  <label><CreditCard size={14} /> Método de Pago</label>
-                  <select 
-                    value={purchaseMethod}
-                    onChange={(e) => setPurchaseMethod(e.target.value)}
-                  >
-                    <option value="EFECTIVO BCV">EFECTIVO BCV</option>
-                    <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
-                    <option value="USD">USD</option>
-                    <option value="USDT">USDT</option>
-                    <option value="ZINLI">ZINLI</option>
-                  </select>
-                </div>
-                <button type="submit" className="submit-purchase-btn">
-                  Ingresar al Inventario
-                </button>
-              </form>
             </div>
+
+            <form onSubmit={handleConfirmPurchase}>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Costo Unitario ($)</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="number" 
+                  step="0.01" 
+                  required 
+                  autoFocus
+                  placeholder="0.00" 
+                  value={purchasePrice}
+                  onChange={(e) => setPurchasePrice(e.target.value)}
+                />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><CreditCard size={14} /> Método de Pago</label>
+                <select 
+                  style={MODAL_INPUT}
+                  value={purchaseMethod}
+                  onChange={(e) => setPurchaseMethod(e.target.value)}
+                >
+                  <option value="EFECTIVO BCV">EFECTIVO BCV</option>
+                  <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
+                  <option value="USD">USD</option>
+                  <option value="USDT">USDT</option>
+                  <option value="ZINLI">ZINLI</option>
+                </select>
+              </div>
+              <button type="submit" style={MODAL_BTN_SUCCESS}>
+                Ingresar al Inventario
+              </button>
+            </form>
           </div>
         </div>
       )}

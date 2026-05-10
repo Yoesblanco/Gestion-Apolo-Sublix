@@ -21,6 +21,65 @@ import {
 import './Customers.css';
 import useScrollLock from '../hooks/useScrollLock';
 
+/* ── Estilos inline reutilizables para los modales ── */
+const MODAL_OVERLAY_STYLE = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
+  zIndex: 3000,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '1rem', boxSizing: 'border-box', overflowY: 'auto'
+};
+
+const modalContentStyle = (maxW = '480px') => ({
+  background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '20px', width: '100%', maxWidth: maxW,
+  maxHeight: '90vh', overflowY: 'auto', padding: '28px',
+  boxSizing: 'border-box', margin: 'auto'
+});
+
+const MODAL_INPUT = {
+  width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
+  background: 'var(--surface)', border: '1px solid var(--border)',
+  color: 'var(--text)', fontSize: '0.95rem', boxSizing: 'border-box'
+};
+
+const MODAL_LABEL = {
+  display: 'flex', alignItems: 'center', gap: '6px',
+  fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
+  marginBottom: '6px'
+};
+
+const MODAL_GROUP = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
+
+const MODAL_BTN_PRIMARY = {
+  width: '100%', padding: '0.85rem', borderRadius: '12px',
+  background: 'linear-gradient(135deg, var(--primary), #0284c7)',
+  color: 'white', border: 'none', fontWeight: 700,
+  fontSize: '1rem', cursor: 'pointer', marginTop: '4px'
+};
+
+const ModalHeader = ({ icon: Icon, title, subtitle, onClose }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {Icon && (
+        <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
+          <Icon size={20} style={{ color: 'var(--primary)' }} />
+        </div>
+      )}
+      <div>
+        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{title}</h3>
+        {subtitle && <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{subtitle}</p>}
+      </div>
+    </div>
+    <button onClick={onClose} style={{
+      background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+      color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
+      width: '36px', height: '36px', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', flexShrink: 0
+    }}><X size={18} /></button>
+  </div>
+);
+
 const Customers = () => {
   const navigate = useNavigate();
   const { customers, setCustomers, orders, setOrders, stockHistory, setStockHistory } = useAppContext();
@@ -150,58 +209,60 @@ const Customers = () => {
       </div>
 
       {showForm && (
-        <div className="modal-overlay animate-fade-in">
-          <div className="modal-content glass modal-content-sm">
-            <div className="modal-header">
-              <h3>{editingCustomerId ? 'Editar Cliente' : 'Registrar Cliente'}</h3>
-              <button className="close-btn" onClick={handleCancelForm}>
-                <X size={24} />
+        <div style={MODAL_OVERLAY_STYLE} onClick={handleCancelForm}>
+          <div style={modalContentStyle('450px')} onClick={e => e.stopPropagation()}>
+            <ModalHeader 
+              icon={User} 
+              title={editingCustomerId ? 'Editar Cliente' : 'Registrar Cliente'} 
+              subtitle="Completa la información del contacto" 
+              onClose={handleCancelForm} 
+            />
+            <form onSubmit={handleSubmitCustomer}>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><User size={14} /> Nombre Completo</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="text" 
+                  required
+                  placeholder="Nombre del cliente" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Mail size={14} /> Correo Electrónico</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="email" 
+                  placeholder="ejemplo@correo.com" 
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Phone size={14} /> Teléfono</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="tel" 
+                  placeholder="+58 ..." 
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><MapPin size={14} /> Ciudad / Ubicación</label>
+                <input 
+                  style={MODAL_INPUT}
+                  type="text" 
+                  placeholder="Ciudad" 
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                />
+              </div>
+              <button type="submit" style={MODAL_BTN_PRIMARY}>
+                {editingCustomerId ? 'Guardar Cambios' : 'Registrar Cliente'}
               </button>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={handleSubmitCustomer} className="customer-form">
-                <div className="form-group">
-                  <label>Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="Nombre del cliente" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    placeholder="ejemplo@correo.com" 
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Teléfono</label>
-                  <input 
-                    type="tel" 
-                    placeholder="+58 ..." 
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Ciudad / Ubicación</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ciudad" 
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  />
-                </div>
-                <button type="submit" className="submit-customer-btn">
-                  {editingCustomerId ? 'Guardar Cambios' : 'Guardar Cliente'}
-                </button>
-              </form>
-            </div>
+            </form>
           </div>
         </div>
       )}

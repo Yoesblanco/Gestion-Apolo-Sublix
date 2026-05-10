@@ -280,32 +280,21 @@ const Inventory = () => {
       {historyModalOpen && (
         <div style={MODAL_OVERLAY_STYLE} onClick={() => setHistoryModalOpen(false)}>
           <div style={modalContentStyle('680px')} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
-                  <Clock size={22} style={{ color: 'var(--primary)' }} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Historial Global de Movimientos</h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    {stockHistory?.length || 0} registro{(stockHistory?.length || 0) !== 1 ? 's' : ''} en total
-                  </p>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {stockHistory?.length > 0 && (
-                  <button onClick={handleCleanupHistory} style={{
-                    background: 'rgba(239,68,68,0.08)', color: 'var(--danger)',
-                    border: '1px solid rgba(239,68,68,0.2)', padding: '6px 14px',
-                    borderRadius: '10px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'
-                  }}>Depurar</button>
-                )}
-                <button onClick={() => setHistoryModalOpen(false)} style={{
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-                  color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
-                  width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}><X size={18} /></button>
-              </div>
+            <ModalHeader 
+              icon={Clock} 
+              title="Historial Global de Movimientos" 
+              subtitle={`${stockHistory?.length || 0} registro${(stockHistory?.length || 0) !== 1 ? 's' : ''} en total`} 
+              onClose={() => setHistoryModalOpen(false)} 
+            />
+            
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginBottom: '16px' }}>
+              {stockHistory?.length > 0 && (
+                <button onClick={handleCleanupHistory} style={{
+                  background: 'rgba(239,68,68,0.08)', color: 'var(--danger)',
+                  border: '1px solid rgba(239,68,68,0.2)', padding: '6px 14px',
+                  borderRadius: '10px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'
+                }}>Depurar Historial</button>
+              )}
             </div>
 
             <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -365,14 +354,18 @@ const Inventory = () => {
             <ModalHeader icon={PlusCircle} title="Agregar Stock" subtitle={`Producto: ${selectedProduct?.name}`} onClose={() => setStockModalOpen(false)} />
             <form onSubmit={handleUpdateStock}>
               <div style={MODAL_GROUP}>
-                <label style={MODAL_LABEL}><Hash size={14} /> Cantidad a sumar</label>
+                <label style={MODAL_LABEL}><Package size={14} /> Producto Seleccionado</label>
+                <input style={{ ...MODAL_INPUT, opacity: 0.7, cursor: 'not-allowed' }} type="text" readOnly value={selectedProduct?.name || ''} />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Plus size={14} /> Cantidad a sumar</label>
                 <input style={MODAL_INPUT} type="number" required autoFocus placeholder="0" min="1"
                   value={stockToAdd} onChange={e => setStockToAdd(e.target.value)} />
               </div>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 16px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
-                Stock actual: <strong style={{ color: 'var(--text)' }}>{selectedProduct?.stock || 0} unds</strong>
-                &nbsp;→&nbsp;
-                <strong style={{ color: '#10b981' }}>{(selectedProduct?.stock || 0) + (parseInt(stockToAdd) || 0)} unds</strong>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 20px', background: 'rgba(16,185,129,0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Stock Actual: <strong>{selectedProduct?.stock || 0}</strong></span>
+                <span>→</span>
+                <span>Nuevo Stock: <strong style={{ color: 'var(--accent)' }}>{(selectedProduct?.stock || 0) + (parseInt(stockToAdd) || 0)}</strong></span>
               </p>
               <button type="submit" style={MODAL_BTN_SUCCESS}>Confirmar Entrada</button>
             </form>
