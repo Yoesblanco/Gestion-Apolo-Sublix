@@ -238,81 +238,124 @@ const Inventory = () => {
     <>
       {historyModalOpen && (
         <div className="modal-overlay animate-fade-in" onClick={() => setHistoryModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '600px', maxWidth: '90vw' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Clock size={20} className="text-primary" />
-                Historial Global de Movimientos
-              </h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
+          <div
+            className="modal-content glass"
+            onClick={e => e.stopPropagation()}
+            style={{ width: '700px', maxWidth: '94vw', padding: '28px' }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display:'flex' }}>
+                  <Clock size={22} style={{ color: 'var(--primary)' }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Historial Global de Movimientos</h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    {stockHistory?.length || 0} registro{(stockHistory?.length || 0) !== 1 ? 's' : ''} en total
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 {stockHistory && stockHistory.length > 0 && (
-                  <button 
+                  <button
                     onClick={handleCleanupHistory}
-                    style={{ 
-                      background: 'rgba(239, 68, 68, 0.1)', 
-                      color: 'var(--danger)', 
-                      border: '1px solid rgba(239, 68, 68, 0.2)',
-                      padding: '5px 12px',
-                      borderRadius: '8px',
+                    style={{
+                      background: 'rgba(239,68,68,0.08)',
+                      color: 'var(--danger)',
+                      border: '1px solid rgba(239,68,68,0.2)',
+                      padding: '6px 14px',
+                      borderRadius: '10px',
                       fontSize: '0.8rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
                     }}
                   >
-                    Depurar Historial
+                    Depurar
                   </button>
                 )}
-                <button className="close-btn" onClick={() => setHistoryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                  <X size={24} />
+                <button
+                  onClick={() => setHistoryModalOpen(false)}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <X size={18} />
                 </button>
               </div>
             </div>
-            <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+
+            {/* Body */}
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {(!stockHistory || stockHistory.length === 0) ? (
-                <div className="empty-state" style={{ padding: '30px 0', textAlign: 'center', opacity: 0.6 }}>
-                  <Package size={32} style={{ marginBottom: '10px' }} />
-                  <p>Aún no hay movimientos de inventario registrados.</p>
+                <div style={{ padding: '48px 0', textAlign: 'center', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <Package size={36} />
+                  <p style={{ margin: 0 }}>Aún no hay movimientos de inventario registrados.</p>
                 </div>
               ) : (
-                <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  {stockHistory.map(record => (
-                    <div key={record.id} className="history-item glass" style={{ 
-                      padding: '15px', 
-                      borderRadius: '12px', 
-                      borderLeft: `3px solid ${record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)'}` 
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ color: 'var(--text-color)' }}>
-                          {record.type === 'Entrada' ? 'Entrada al Inventario' : `Pedido: ${record.customer}`}
-                        </strong>
-                        <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-                          {new Date(record.date).toLocaleDateString()} {new Date(record.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                stockHistory.map(record => {
+                  const isEntrada = record.type === 'Entrada';
+                  return (
+                    <div
+                      key={record.id}
+                      style={{
+                        padding: '16px 20px',
+                        borderRadius: '14px',
+                        background: isEntrada ? 'rgba(16,185,129,0.05)' : 'rgba(14,165,233,0.05)',
+                        border: `1px solid ${isEntrada ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)'}`,
+                        borderLeft: `4px solid ${isEntrada ? '#10b981' : '#0ea5e9'}`,
+                      }}
+                    >
+                      {/* Row 1: Type badge + Date */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          padding: '3px 10px',
+                          borderRadius: '20px',
+                          background: isEntrada ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)',
+                          color: isEntrada ? '#10b981' : '#0ea5e9'
+                        }}>
+                          {isEntrada ? '▲ Entrada' : '▼ Salida'}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {new Date(record.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {' · '}
+                          {new Date(record.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                          Producto: <strong>{record.productName}</strong>
-                          {record.orderId && record.orderId !== 'N/A' && <span style={{opacity: 0.7, marginLeft: '10px'}}>Ord: {record.orderId}</span>}
-                        </span>
-                        <span className="qty-badge" style={{ 
-                          background: record.type === 'Entrada' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 62, 108, 0.1)', 
-                          color: record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)', 
-                          padding: '4px 10px', 
-                          borderRadius: '20px', 
-                          fontSize: '0.9rem', 
-                          fontWeight: 'bold' 
+
+                      {/* Row 2: Product + Quantity */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div>
+                          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{record.productName}</p>
+                          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                            {isEntrada ? record.customer || 'Reposición' : `Pedido: ${record.customer}`}
+                            {record.orderId && record.orderId !== 'N/A' && (
+                              <span style={{ marginLeft: '10px', opacity: 0.7 }}># {record.orderId}</span>
+                            )}
+                          </p>
+                        </div>
+                        <span style={{
+                          fontSize: '1.1rem',
+                          fontWeight: 800,
+                          color: isEntrada ? '#10b981' : '#0ea5e9',
+                          whiteSpace: 'nowrap',
+                          paddingLeft: '16px'
                         }}>
-                          {record.type === 'Entrada' ? '+' : '-'}{record.quantity} unds
+                          {isEntrada ? '+' : '-'}{record.quantity} unds
                         </span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })
               )}
             </div>
           </div>
         </div>
       )}
+
 
       {stockModalOpen && (
         <div className="modal-overlay animate-fade-in" onClick={() => setStockModalOpen(false)}>
