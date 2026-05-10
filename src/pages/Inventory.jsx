@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Search,
   Plus,
   Filter,
-  MoreVertical,
   ArrowLeft,
   Trash2,
   X,
@@ -28,10 +27,9 @@ const Inventory = () => {
     setProducts, 
     stockHistory = [], 
     setStockHistory, 
-    transactions, 
     setTransactions,
-    toBuy = [],
     setToBuy,
+    setToBuyHistory,
     orders = [],
     setOrders
   } = useAppContext();
@@ -88,7 +86,7 @@ const Inventory = () => {
 
     if (newProduct.stock > 0) {
       const totalCost = newProduct.stock * (newProduct.price || 0);
-      const newTransaction = {
+      setTransactions(prev => [{
         id: `TX-INV-${Date.now()}`,
         date: new Date().toISOString(),
         amount: totalCost,
@@ -96,8 +94,7 @@ const Inventory = () => {
         method: 'EFECTIVO BCV',
         category: 'Inventario/Materia Prima',
         description: `Stock inicial de ${newProduct.stock} unds de ${newProduct.name}`
-      };
-      setTransactions(prev => [newTransaction, ...prev]);
+      }, ...prev]);
     }
 
     setProducts([newProduct, ...products]);
@@ -594,173 +591,7 @@ const Inventory = () => {
               ))
             )}
           </tbody>
-        </table>
-      </div>
-
-      {historyModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setHistoryModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '600px', maxWidth: '90vw' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Clock size={20} className="text-primary" />
-                Historial Global de Movimientos
-              </h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {stockHistory && stockHistory.length > 0 && (
-                  <button 
-                    onClick={handleCleanupHistory}
-                    style={{ 
-                      background: 'rgba(239, 68, 68, 0.1)', 
-                      color: 'var(--danger)', 
-                      border: '1px solid rgba(239, 68, 68, 0.2)',
-                      padding: '5px 12px',
-                      borderRadius: '8px',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Depurar Historial
-                  </button>
-                )}
-                <button className="close-btn" onClick={() => setHistoryModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
-            <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-              {(!stockHistory || stockHistory.length === 0) ? (
-                <div className="empty-state" style={{ padding: '30px 0', textAlign: 'center', opacity: 0.6 }}>
-                  <Package size={32} style={{ marginBottom: '10px' }} />
-                  <p>Aún no hay movimientos de inventario registrados.</p>
-                </div>
-              ) : (
-                <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  {stockHistory.map(record => (
-                    <div key={record.id} className="history-item glass" style={{ 
-                      padding: '15px', 
-                      borderRadius: '12px', 
-                      borderLeft: `3px solid ${record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)'}` 
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ color: 'var(--text-color)' }}>
-                          {record.type === 'Entrada' ? 'Entrada al Inventario' : `Pedido: ${record.customer}`}
-                        </strong>
-                        <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-                          {new Date(record.date).toLocaleDateString()} {new Date(record.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                          Producto: <strong>{record.productName}</strong>
-                          {record.orderId && record.orderId !== 'N/A' && <span style={{opacity: 0.7, marginLeft: '10px'}}>Ord: {record.orderId}</span>}
-                        </span>
-                        <span className="qty-badge" style={{ 
-                          background: record.type === 'Entrada' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 62, 108, 0.1)', 
-                          color: record.type === 'Entrada' ? '#10b981' : 'var(--primary-color)', 
-                          padding: '4px 10px', 
-                          borderRadius: '20px', 
-                          fontSize: '0.9rem', 
-                          fontWeight: 'bold' 
-                        }}>
-                          {record.type === 'Entrada' ? '+' : '-'}{record.quantity} unds
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
-      )}
-
-      {stockModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setStockModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Agregar Stock</h3>
-              <button className="close-btn" onClick={() => setStockModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p style={{ marginBottom: '20px', fontSize: '0.9rem', opacity: 0.8 }}>
-                Ingresa la cantidad de <strong>{selectedProduct?.name}</strong> que ha llegado al inventario.
-              </p>
-              <form onSubmit={handleUpdateStock}>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label><Hash size={14} /> Cantidad a sumar</label>
-                  <input 
-                    type="number" 
-                    required 
-                    autoFocus
-                    placeholder="0" 
-                    value={stockToAdd}
-                    onChange={(e) => setStockToAdd(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Confirmar Entrada
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-      {editModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setEditModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '450px' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Editar Detalles del Producto</h3>
-              <button className="close-btn" onClick={() => setEditModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={handleEditProduct}>
-                <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label><Package size={14} /> Nombre del Producto</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editFormData.name}
-                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label><Tag size={14} /> Categoría</label>
-                  <select
-                    value={editFormData.category}
-                    onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  >
-                    <option value="Sublimación">Sublimación</option>
-                    <option value="Textil">Textil</option>
-                    <option value="Papelería">Papelería</option>
-                    <option value="Vinilo">Vinilo</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                </div>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label><Banknote size={14} /> Precio Unitario ($)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    required 
-                    value={editFormData.price}
-                    onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Guardar Cambios
-                </button>
-              </form>
-            </div>
-          </div>
         </div>
       )}
       </div>

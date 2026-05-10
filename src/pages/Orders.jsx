@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { formatUSD } from '../utils/formatters';
@@ -875,6 +875,7 @@ const Orders = () => {
           </div>
         </form>
       </div>
+    </div>
     );
   };
 

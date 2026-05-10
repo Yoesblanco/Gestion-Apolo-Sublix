@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
 import { formatUSD } from '../utils/formatters';
 
 const AppContext = createContext();
@@ -88,7 +88,6 @@ export const AppProvider = ({ children }) => {
         const localLastUpdated = localData.lastUpdated || 0;
 
         // Last Write Wins (LWW): Si el servidor tiene datos más recientes, sobrescribimos lo local.
-        // Esto soluciona el problema de que los elementos eliminados volvían a aparecer (efecto zombie de mergeData).
         if (serverLastUpdated > localLastUpdated) {
           console.log('Datos del servidor son más recientes. Actualizando estado local...');
           if (Array.isArray(data.transactions)) setTransactions(data.transactions);
@@ -126,9 +125,6 @@ export const AppProvider = ({ children }) => {
         timestamp: syncTimestamp.current
       }),
     }).catch(() => { });
-    // Importante: No abortamos la petición (removemos AbortController).
-    // Si el usuario cierra la pestaña justo después de eliminar algo, queremos que la petición de guardado continúe 
-    // y llegue al servidor para no perder la acción de borrado.
   }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, isInitialized]);
 
   const salesTotals = useMemo(() => {

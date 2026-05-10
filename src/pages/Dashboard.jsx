@@ -1,19 +1,14 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { formatUSD } from '../utils/formatters';
 import { 
-  TrendingUp, 
   Package, 
   Users, 
   Wallet,
   ShoppingBag,
-  ArrowRight,
-  AlertTriangle,
   Plus,
   Clock,
-  CheckCircle,
-  FileText,
   Calendar
 } from 'lucide-react';
 import './Dashboard.css';
@@ -46,7 +41,7 @@ const Dashboard = () => {
       .slice(0, 3);
   }, [orders]);
 
-  const recentTransactions = (transactions || []).slice(0, 5);
+
 
   const chartData = useMemo(() => {
     // 1. Crear un mapa para acceso rápido por fecha (YYYY-MM-DD)
@@ -121,13 +116,7 @@ const Dashboard = () => {
           <p>Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Centro de mando de {user?.businessName || 'Apolo Sublix'}.</p>
         </div>
         <div className="quick-actions-bar">
-          <button className="action-btn" style={{ background: 'var(--danger)', color: 'white', border: 'none' }} onClick={() => {
-            const finalData = {"users":[{"id":1,"email":"admin@apolosublix.com","password":"$2b$10$/2SvMH48cyWEnhlsfc7ORuwx3lumHS3cqJSaD.wxP7UVgYZQVmDqy","name":"Administrador"}],"products":[{"id":1777599513404,"name":"Termo skyni ","category":"Otros","stock":1,"price":9.05,"status":"Bajo Stock"},{"id":1777599426247,"name":"Llaveros","category":"Sublimación","stock":113,"price":0.26,"status":"En Stock"},{"id":1777220555022,"name":"Taza Blanca 11 Onz","category":"Sublimación","stock":67,"price":1.3,"status":"En Stock"},{"id":1777177327820,"name":"Sueter","category":"Sublimación","stock":2,"price":15,"status":"Bajo Stock"},{"id":1777175993294,"name":"Taza Magica 11onz","category":"Sublimación","stock":6,"price":2,"status":"Bajo Stock"}],"orders":[{"id":"ORD-387","customerId":1777578159094,"customer":"Yolimar Alfonzo","productName":"Taza Blanca 11 Onz","date":"2026-04-30","deliveryDate":"0026-05-08","total":8,"status":"Pendiente","desc":"","quantity":1,"pendingStockToSubtract":0,"payments":[]},{"id":"ORD-335","customerId":1777570301125,"customer":"Milagros","productName":"Taza Blanca 11 Onz","date":"2026-04-30","deliveryDate":"2026-04-02","total":16,"status":"Pendiente","desc":"","quantity":2,"pendingStockToSubtract":0,"payments":[]},{"id":"ORD-334","customer":"Cristina Devera","productName":"Termo skyni","date":"2026-04-26","deliveryDate":"2026-04-27","total":0,"status":"Pendiente","desc":"Pedido recuperado del historial","quantity":1,"pendingStockToSubtract":1,"payments":[]},{"id":"ORD-822","customer":"Hilaria Figueroa ","productName":"Taza Blanca ","date":"2026-04-26","deliveryDate":"2026-04-27","total":8,"status":"Entregado","desc":"Pedido recuperado del historial","quantity":1,"pendingStockToSubtract":0,"payments":[{"id":1777606398388.1028,"amount":8,"date":"2026-04-27","method":"Efectivo","notes":"Pago total recuperado"}]},{"id":"ORD-736","customer":"Keilys Flores","productName":"Taza Blanca ","date":"2026-04-26","deliveryDate":"2026-04-27","total":8,"status":"Entregado","desc":"Pedido recuperado del historial","quantity":1,"pendingStockToSubtract":0,"payments":[{"id":1777606398388.3118,"amount":8,"date":"2026-04-27","method":"Efectivo","notes":"Pago total recuperado"}]},{"id":"ORD-557","customerId":1777176385005,"customer":"Blaruth Mendoza","productName":"Sueter","date":"2026-04-26","deliveryDate":"2026-04-27","total":25,"status":"Pendiente","desc":"Pedido recuperado del historial","quantity":1,"pendingStockToSubtract":0,"payments":[]}],"transactions":[{"id":1777599513406,"date":"2026-05-01T01:38:33.404Z","amount":9.05,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Compra realizada desde la lista de \"Por comprar\". Producto nuevo solicitado para pedido de Cristina Devera (ORD-334) (1 unds de Termo skyni )","orderId":"ORD-334"},{"id":1777599449600,"date":"2026-05-01T01:37:29.599Z","amount":3.38,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Llegada de nueva mercancía (13 unds de Llaveros)","orderId":null},{"id":1777599426249,"date":"2026-05-01T01:37:06.247Z","amount":26,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Registro de producto nuevo (100 unds de Llaveros)","orderId":null},{"id":1777588519439,"date":"2026-04-30T22:35:19.438Z","amount":15,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Llegada de nueva mercancía (1 unds de Sueter)","orderId":null},{"id":1777588482824,"date":"2026-04-30T22:34:42.822Z","amount":26,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Registro de producto nuevo (100 unds de llaveros )","orderId":null},{"id":1777429509571,"date":"2026-04-29T02:25:09.570Z","amount":2,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Llegada de nueva mercancía (1 unds de Taza Magica 11onz)","orderId":null},{"id":1777177327822,"date":"2026-04-26T04:22:07.820Z","amount":15,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Registro de producto nuevo (1 unds de Sueter)","orderId":null},{"id":1777175993296,"date":"2026-04-26T03:59:53.294Z","amount":10,"type":"Egreso","category":"Inventario/Materia Prima","description":"Historial: Registro de producto nuevo (5 unds de Taza Magica 11onz)","orderId":null},{"id":1777606398389.1028,"date":"2026-04-27","amount":8,"type":"Ingreso","category":"Venta/Pedido","description":"Pago pedido ORD-822","orderId":"ORD-822"},{"id":1777606398389.3118,"date":"2026-04-27","amount":8,"type":"Ingreso","category":"Venta/Pedido","description":"Pago pedido ORD-736","orderId":"ORD-736"}],"customers":[{"id":1777578159094,"name":"Yolimar Alfonzo","phone":"0424968281","email":"","city":"No especificada"},{"id":1777570301125,"name":"Milagros","phone":"04167987651","email":"","city":"Puerto Ordaz"},{"id":1777220742698,"name":"Hilaria Figueroa ","phone":"04120550368","email":"","city":"No especificada"},{"id":1777220449689,"name":"Cristina Devera","phone":"04121937873","email":"","city":"No especificada"},{"id":1777176385005,"name":"Blaruth Mendoza","email":"","phone":"04161905593","city":"Guayana"},{"id":1777176249798,"name":"Keilys Flores","phone":"04249048235","email":"","city":"No especificada"}],"toBuy":[],"stockHistory":[{"id":1777599780758,"date":"2026-05-01T01:43:00.758Z","type":"Salida","productName":"Sueter","customer":"Blaruth Mendoza","quantity":1,"orderId":"ORD-557","notes":"Reserva para pedido"},{"id":1777599513405,"date":"2026-05-01T01:38:33.404Z","type":"Entrada","productName":"Termo skyni ","customer":"Compra Directa (Lista de Faltantes)","quantity":1,"orderId":"ORD-334","notes":"Compra realizada desde la lista de \"Por comprar\". Producto nuevo solicitado para pedido de Cristina Devera (ORD-334)"},{"id":1777599449599,"date":"2026-05-01T01:37:29.599Z","type":"Entrada","productName":"Llaveros","customer":"Reposición de Mercancía","quantity":13,"orderId":"N/A","notes":"Llegada de nueva mercancía"},{"id":1777599426248,"date":"2026-05-01T01:37:06.247Z","type":"Entrada","productName":"Llaveros","customer":"Inventario Inicial","quantity":100,"orderId":"N/A","notes":"Registro de producto nuevo"},{"id":1777588519438,"date":"2026-04-30T22:35:19.438Z","type":"Entrada","productName":"Sueter","customer":"Reposición de Mercancía","quantity":1,"orderId":"N/A","notes":"Llegada de nueva mercancía"},{"id":1777588482823,"date":"2026-04-30T22:34:42.822Z","type":"Entrada","productName":"llaveros ","customer":"Inventario Inicial","quantity":100,"orderId":"N/A","notes":"Registro de producto nuevo"},{"id":1777578159095,"date":"2026-04-30T19:42:39.095Z","type":"Salida","productName":"Taza Blanca 11 Onz","customer":"yoi","quantity":1,"orderId":"ORD-387","notes":"Reserva para pedido"},{"id":1777570301125,"date":"2026-04-30T17:31:41.125Z","type":"Salida","productName":"Taza Blanca 11 Onz","customer":"milagro","quantity":2,"orderId":"ORD-335","notes":"Reserva para pedido"},{"id":1777429509570,"date":"2026-04-29T02:25:09.570Z","type":"Entrada","productName":"Taza Magica 11onz","customer":"Reposición de Mercancía","quantity":1,"orderId":"N/A","notes":"Llegada de nueva mercancía"},{"id":1777220742698,"date":"2026-04-26T16:25:42.698Z","type":"Salida","productName":"Taza Blanca ","customer":"Hilaria Figueroa ","quantity":1,"orderId":"ORD-822","notes":"Reserva para pedido"},{"id":1777220581447,"date":"2026-04-26T16:23:01.447Z","type":"Salida","productName":"Taza Blanca ","customer":"Keilys Flores","quantity":1,"orderId":"ORD-736","notes":"Reserva para pedido"},{"id":1777220555023,"date":"2026-04-26T16:22:35.022Z","type":"Entrada","productName":"Taza Blanca ","customer":"Inventario Inicial","quantity":72,"orderId":"N/A","notes":"Registro de producto nuevo"},{"id":1777177327821,"date":"2026-04-26T04:22:07.820Z","type":"Entrada","productName":"Sueter","customer":"Inventario Inicial","quantity":1,"orderId":"N/A","notes":"Registro de producto nuevo"},{"id":1777175993295,"date":"2026-04-26T03:59:53.294Z","type":"Entrada","productName":"Taza Magica 11onz","customer":"Inventario Inicial","quantity":5,"orderId":"N/A","notes":"Registro de producto nuevo"}]};
-            localStorage.setItem('apolo_app_data', JSON.stringify(finalData));
-            window.location.reload();
-          }}>
-            <Clock size={18} /> Restaurar Final
-          </button>
+
           <button className="action-btn primary" onClick={() => navigate('/pedidos')}>
             <Plus size={18} /> Nuevo Pedido
           </button>
@@ -212,9 +201,9 @@ const Dashboard = () => {
                 <p className="empty-msg">Todo al día</p>
               ) : (
                 upcomingOrders.slice(0, 5).map(o => (
-                  <div key={o.id || Math.random()} className="compact-order-item">
+                  <div key={o.id} className="compact-order-item">
                     <div className="order-info">
-                      <span className="o-client">{o.customerName}</span>
+                      <span className="o-client">{o.customer}</span>
                       <span className="o-date">{o.deliveryDate}</span>
                     </div>
                     <span className="o-amount">${formatUSD(o.total || 0)}</span>

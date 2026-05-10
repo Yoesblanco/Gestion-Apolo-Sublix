@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { formatUSD } from '../utils/formatters';
@@ -22,7 +22,9 @@ import './Sales.css';
 
 const Sales = () => {
   const navigate = useNavigate();
-  const { transactions, setTransactions, salesTotals } = useAppContext();
+  const { transactions, setTransactions, salesTotals, addToast } = useAppContext();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [pendingTx, setPendingTx] = useState(null);

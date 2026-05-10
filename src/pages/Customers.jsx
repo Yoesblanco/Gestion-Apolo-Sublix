@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { formatUSD } from '../utils/formatters';
@@ -16,14 +16,13 @@ import {
   Clock,
   CheckCircle,
   Calendar,
-  ChevronRight,
   Edit2
 } from 'lucide-react';
 import './Customers.css';
 
 const Customers = () => {
   const navigate = useNavigate();
-  const { customers, setCustomers, orders, setOrders } = useAppContext();
+  const { customers, setCustomers, orders, setOrders, stockHistory, setStockHistory } = useAppContext();
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);

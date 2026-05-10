@@ -1,16 +1,16 @@
-import React from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { Moon, Sun, Shield, Bell, Database, Trash2, Save, LogOut, User } from 'lucide-react';
+import { Moon, Sun, Database, Trash2, Save, LogOut, User } from 'lucide-react';
 import './Settings.css';
 
 const Settings = () => {
-  const { theme, setTheme, isSidebarCollapsed, setIsSidebarCollapsed, addToast } = useAppContext();
+  const { theme, setTheme, addToast } = useAppContext();
   const { user, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [profileData, setProfileData] = React.useState({
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileData, setProfileData] = useState({
     name: user?.name || '',
     username: user?.username || '',
     email: user?.email || '',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import {
   ShoppingBag,
@@ -27,7 +27,8 @@ const ToBuy = () => {
     setStockHistory, 
     transactions, 
     setTransactions,
-    orders = [] 
+    orders = [],
+    addToast 
   } = useAppContext();
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'history'
   const [buyModalOpen, setBuyModalOpen] = useState(false);
