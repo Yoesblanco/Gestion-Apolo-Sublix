@@ -174,7 +174,7 @@ app.get('/api/data', async (req, res) => {
         orderId: h.order_id, customer: h.customer, dateBought: h.date_bought,
         purchasePrice: h.purchase_price, productId: h.product_id, transactionId: h.transaction_id
       })),
-      lastSync: Date.now()
+      lastSync: 1 // Usamos un valor fijo bajo para que el frontend priorice lo local a menos que no tenga nada
     };
 
     res.json(dbFormat);
