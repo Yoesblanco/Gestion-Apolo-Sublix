@@ -509,16 +509,24 @@
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 1.5rem;
   }
   
   .header-title-area {
     width: 100%;
   }
+
+  .header-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
   
-  .export-btn {
+  .sales-add-btn, .clear-history-btn, .export-btn {
     width: 100%;
     justify-content: center;
+    padding: 0.85rem;
   }
 
   .reporting-form {
