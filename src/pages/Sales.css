@@ -529,10 +529,6 @@
     padding: 0.85rem;
   }
 
-  .reporting-form {
-    grid-template-columns: 1fr;
-  }
-
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -542,25 +538,18 @@
   .history-filters {
     width: 100%;
     overflow-x: auto;
+    padding-bottom: 5px;
   }
-}
 
-
-@media (max-width: 900px) {
-  .sales-table {
+  .table-wrapper {
     display: block;
+    width: 100%;
     overflow-x: auto;
-    white-space: nowrap;
     -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
   }
-}
 
-@media (max-width: 600px) {
-  .sales-overview {
-    grid-template-columns: 1fr;
-  }
-  
-  .reporting-form {
-    grid-template-columns: 1fr;
+  .sales-table {
+    min-width: 700px; /* Asegura que la tabla no se colapse y se pueda scrollear bien */
   }
 }
