@@ -177,7 +177,7 @@ const Dashboard = () => {
           <div className="card-header">
             <h3>Entregas Críticas</h3>
             <button className="view-all-btn" onClick={() => navigate('/pedidos')}>
-              Ver <ArrowRight size={14} />
+              Ver todos
             </button>
           </div>
           

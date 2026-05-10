@@ -565,3 +565,94 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Card Header & View All Button */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.card-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+.view-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  padding: 0.4rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-all-btn:hover {
+  background: rgba(14, 165, 233, 0.2);
+  border-color: var(--primary);
+  transform: translateX(2px);
+}
+
+/* Header-title with icon (used in chart section) */
+.header-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-title-with-icon h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Chart Legend */
+.chart-legend-large {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-item.ingresos::before {
+  background: #10b981;
+}
+
+.legend-item.egresos::before {
+  background: #f43f5e;
+}
+
+/* No data message */
+.no-data-msg {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: auto;
+}
