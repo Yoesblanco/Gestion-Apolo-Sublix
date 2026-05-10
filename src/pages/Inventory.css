@@ -252,15 +252,12 @@
   }
 }
 
-<<<<<<< Updated upstream
-=======
 
 /* Global Modal System Overrides for Inventory */
 .history-modal-content {
   max-width: 900px !important;
 }
 
->>>>>>> Stashed changes
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
@@ -449,7 +446,6 @@
   .table-controls {
     flex-direction: column;
   }
-}
 }
 
 .modal-content {

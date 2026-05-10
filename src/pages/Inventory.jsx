@@ -55,7 +55,6 @@ const Inventory = () => {
     e.preventDefault();
     if (!formData.name || !formData.stock || !formData.price) return;
 
-    // Verificar si el nombre ya existe
     if (products.some(p => p.name.toLowerCase() === formData.name.toLowerCase())) {
       alert(`Ya existe un producto llamado "${formData.name}". Por favor usa un nombre diferente.`);
       return;
@@ -106,7 +105,6 @@ const Inventory = () => {
     const productToDelete = products.find(p => p.id === id);
     if (!productToDelete) return;
 
-    // Verificar si el producto tiene pedidos pendientes o unidades apartadas
     const pendingOrdersCount = orders.filter(o => 
       (o.productId === id || o.productName === productToDelete.name) && 
       o.status !== 'Entregado' && o.status !== 'Cancelado'
@@ -122,8 +120,6 @@ const Inventory = () => {
 
     if (window.confirm(warningMsg)) {
       setProducts(products.filter(p => p.id !== id));
-      // No borramos el historial de stock por defecto para mantener trazabilidad, 
-      // pero si el usuario quiere, puede usar el botón de "Depurar Historial" después.
     }
   };
 
@@ -183,18 +179,14 @@ const Inventory = () => {
 
     const oldName = selectedProduct.name;
     const newName = editFormData.name;
-
-    // 1. Normalizar nombres (Quitar espacios extra y primera letra Mayúscula)
     const normalizedNewName = newName.trim();
     
-    // Verificar si el nuevo nombre ya existe en OTRO producto (ignora mayúsculas)
     if (normalizedNewName.toLowerCase() !== oldName.toLowerCase() && 
         products.some(p => p.name.toLowerCase() === normalizedNewName.toLowerCase() && p.id !== selectedProduct.id)) {
       alert(`Ya existe otro producto llamado "${normalizedNewName}". No puedes usar un nombre duplicado.`);
       return;
     }
 
-    // 2. Actualizar productos
     const updatedProducts = products.map(p => {
       if (p.id === selectedProduct.id) {
         return {
@@ -207,26 +199,21 @@ const Inventory = () => {
       return p;
     });
 
-    // 3. ACTUALIZACIÓN EN CASCADA: Si el nombre cambió, actualizar TODO el sistema
     if (oldName !== normalizedNewName) {
-      // Actualizar Historial de Stock
       setStockHistory(prev => (prev || []).map(h => 
         h.productName.toLowerCase() === oldName.toLowerCase() ? { ...h, productName: normalizedNewName } : h
       ));
 
-      // Actualizar Lista de Por Comprar (Pendientes)
       setToBuy(prev => (prev || []).map(item => 
         (item.productId === selectedProduct.id || item.productName.toLowerCase() === oldName.toLowerCase()) 
           ? { ...item, productName: normalizedNewName } : item
       ));
 
-      // Actualizar Historial de Compras
       setToBuyHistory(prev => (prev || []).map(item => 
         (item.productId === selectedProduct.id || item.productName.toLowerCase() === oldName.toLowerCase()) 
           ? { ...item, productName: normalizedNewName } : item
       ));
 
-      // Actualizar Pedidos
       setOrders(prev => (prev || []).map(order => 
         (order.productId === selectedProduct.id || (order.productName && order.productName.toLowerCase() === oldName.toLowerCase()))
           ? { ...order, productName: normalizedNewName } 
@@ -418,182 +405,181 @@ const Inventory = () => {
       )}
 
       <div className="inventory animate-fade-in">
-      <div className="page-header">
-        <div className="header-title-area">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h2>Inventario</h2>
-            <p>Gestión de stock de Apolo Sublix</p>
+        <div className="page-header">
+          <div className="header-title-area">
+            <button className="back-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2>Inventario</h2>
+              <p>Gestión de stock de Apolo Sublix</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="add-btn" onClick={() => setHistoryModalOpen(true)} style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}>
+              <Clock size={20} />
+              <span>Historial Global</span>
+            </button>
+            <button className="add-btn" onClick={() => {
+              const nextShow = !showForm;
+              setShowForm(nextShow);
+              if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}>
+              {showForm ? <X size={20} /> : <Plus size={20} />}
+              <span>{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
+            </button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="add-btn" onClick={() => setHistoryModalOpen(true)} style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}>
-            <Clock size={20} />
-            <span>Historial Global</span>
+
+        {showForm && (
+          <div className="inventory-form-card glass animate-fade-in">
+            <h3>Registrar Nuevo Producto</h3>
+            <form onSubmit={handleAddProduct} className="inventory-form">
+              <div className="form-group">
+                <label><Package size={14} /> Nombre del Producto</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Taza Blanca 11oz"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label><Tag size={14} /> Categoría</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value="Sublimación">Sublimación</option>
+                  <option value="Textil">Textil</option>
+                  <option value="Papelería">Papelería</option>
+                  <option value="Vinilo">Vinilo</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label><Hash size={14} /> Stock Inicial</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="0"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label><Banknote size={14} /> Precio Unitario ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
+              </div>
+              <button type="submit" className="submit-inv-btn">
+                Guardar en Inventario
+              </button>
+            </form>
+          </div>
+        )}
+
+        <div className="table-controls glass">
+          <div className="search-bar">
+            <Search size={18} />
+            <input type="text" placeholder="Buscar productos..." />
+          </div>
+          <button className="filter-btn">
+            <Filter size={18} />
+            <span>Filtros</span>
           </button>
-          <button className="add-btn" onClick={() => {
-            const nextShow = !showForm;
-            setShowForm(nextShow);
-            if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}>
-            {showForm ? <X size={20} /> : <Plus size={20} />}
-            <span>{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
-          </button>
         </div>
-      </div>
 
-      {showForm && (
-        <div className="inventory-form-card glass animate-fade-in">
-          <h3>Registrar Nuevo Producto</h3>
-          <form onSubmit={handleAddProduct} className="inventory-form">
-            <div className="form-group">
-              <label><Package size={14} /> Nombre del Producto</label>
-              <input
-                type="text"
-                required
-                placeholder="Ej: Taza Blanca 11oz"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label><Tag size={14} /> Categoría</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                <option value="Sublimación">Sublimación</option>
-                <option value="Textil">Textil</option>
-                <option value="Papelería">Papelería</option>
-                <option value="Vinilo">Vinilo</option>
-                <option value="Otros">Otros</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label><Hash size={14} /> Stock Inicial</label>
-              <input
-                type="number"
-                required
-                placeholder="0"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label><Banknote size={14} /> Precio Unitario ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                placeholder="0.00"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              />
-            </div>
-            <button type="submit" className="submit-inv-btn">
-              Guardar en Inventario
-            </button>
-          </form>
-        </div>
-      )}
-
-      <div className="table-controls glass">
-        <div className="search-bar">
-          <Search size={18} />
-          <input type="text" placeholder="Buscar productos..." />
-        </div>
-        <button className="filter-btn">
-          <Filter size={18} />
-          <span>Filtros</span>
-        </button>
-      </div>
-
-      <div className="table-container glass">
-        <table className="inventory-table">
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Categoría</th>
-              <th>Disponible</th>
-              <th>Apartado</th>
-              <th>Precio (Venta)</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(products || []).length === 0 ? (
+        <div className="table-container glass">
+          <table className="inventory-table">
+            <thead>
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
-                  No se encontraron productos.
-                </td>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Disponible</th>
+                <th>Apartado</th>
+                <th>Precio (Venta)</th>
+                <th>Estado</th>
+                <th>Acciones</th>
               </tr>
-            ) : (
-              [...products]
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((p) => (
-                <tr key={p.id} className={p.stock === 0 ? 'out-of-stock-row' : ''}>
-                  <td className="product-name">
-                    <div className="name-with-alert">
-                      {p.name}
-                      {p.stock === 0 && <AlertTriangle size={14} className="alert-icon-pulse" />}
-                    </div>
-                  </td>
-                  <td>{p.category}</td>
-                  <td className={p.stock === 0 ? 'text-danger font-bold' : ''}>
-                    {p.stock} unds
-                  </td>
-                  <td style={{ color: (p.reserved || 0) > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
-                    {p.reserved || 0} unds
-                  </td>
-                  <td>${typeof p.price === 'number' ? formatUSD(p.price) : p.price}</td>
-                  <td>
-                    <span className={`status-badge ${p.status.toLowerCase().replace(' ', '-')}`}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="inv-actions">
-                      <button 
-                        className="inv-edit-btn" 
-                        onClick={() => {
-                          setSelectedProduct(p);
-                          setEditFormData({
-                            name: p.name,
-                            category: p.category,
-                            price: p.price
-                          });
-                          setEditModalOpen(true);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }} 
-                        title="Editar Producto"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        className="inv-add-stock-btn" 
-                        onClick={() => {
-                          setSelectedProduct(p);
-                          setStockModalOpen(true);
-                        }} 
-                        title="Agregar Stock"
-                      >
-                        <PlusCircle size={18} />
-                      </button>
-                      <button className="inv-delete-btn" onClick={() => handleDeleteProduct(p.id)} title="Eliminar">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {(products || []).length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                    No se encontraron productos.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
+              ) : (
+                [...products]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((p) => (
+                    <tr key={p.id} className={p.stock === 0 ? 'out-of-stock-row' : ''}>
+                      <td className="product-name">
+                        <div className="name-with-alert">
+                          {p.name}
+                          {p.stock === 0 && <AlertTriangle size={14} className="alert-icon-pulse" />}
+                        </div>
+                      </td>
+                      <td>{p.category}</td>
+                      <td className={p.stock === 0 ? 'text-danger font-bold' : ''}>
+                        {p.stock} unds
+                      </td>
+                      <td style={{ color: (p.reserved || 0) > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
+                        {p.reserved || 0} unds
+                      </td>
+                      <td>${typeof p.price === 'number' ? formatUSD(p.price) : p.price}</td>
+                      <td>
+                        <span className={`status-badge ${p.status?.toLowerCase().replace(' ', '-') || 'sin-status'}`}>
+                          {p.status || 'Sin Stock'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="inv-actions">
+                          <button 
+                            className="inv-edit-btn" 
+                            onClick={() => {
+                              setSelectedProduct(p);
+                              setEditFormData({
+                                name: p.name,
+                                category: p.category,
+                                price: p.price
+                              });
+                              setEditModalOpen(true);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }} 
+                            title="Editar Producto"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button 
+                            className="inv-add-stock-btn" 
+                            onClick={() => {
+                              setSelectedProduct(p);
+                              setStockModalOpen(true);
+                            }} 
+                            title="Agregar Stock"
+                          >
+                            <PlusCircle size={18} />
+                          </button>
+                          <button className="inv-delete-btn" onClick={() => handleDeleteProduct(p.id)} title="Eliminar">
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+              )}
+            </tbody>
+          </table>
         </div>
-        </div>
-      )}
       </div>
     </>
   );
