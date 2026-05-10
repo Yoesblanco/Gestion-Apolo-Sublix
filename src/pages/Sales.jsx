@@ -385,7 +385,8 @@ const Sales = () => {
           </div>
         </div>
         <div className="table-wrapper">
-          <table className="sales-table">
+          {/* Vista de Tabla (Desktop) */}
+          <table className="sales-table desktop-only">
             <thead>
               <tr>
                 <th>ID</th>
@@ -394,7 +395,7 @@ const Sales = () => {
                 <th>Tipo</th>
                 <th>Monto</th>
                 <th>Método</th>
-                <th>Acciones</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -405,20 +406,20 @@ const Sales = () => {
               ) : (
                 filteredTransactions.map((tx) => (
                   <tr key={tx.id}>
-                    <td className="tx-id">{tx.id}</td>
+                    <td className="tx-id" style={{ fontSize: '0.7rem', opacity: 0.7 }}>{tx.id.toString().slice(-8)}</td>
                     <td className="tx-date">{new Date(tx.date).toLocaleDateString()}</td>
-                    <td>{tx.product || tx.description}</td>
+                    <td style={{ fontWeight: 600 }}>{tx.product || tx.description}</td>
                     <td>
                       <span className={`type-badge ${tx.type.toLowerCase()}`}>
-                        {tx.type.toUpperCase()}
+                        {tx.type}
                       </span>
                     </td>
-                    <td className={`tx-amount ${tx.type.toLowerCase() === 'egreso' ? 'text-danger' : 'text-accent'}`}>
+                    <td className={`tx-amount ${tx.type.toLowerCase() === 'egreso' ? 'text-danger' : 'text-accent'}`} style={{ fontWeight: 800 }}>
                       {tx.type.toLowerCase() === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
                     </td>
-                    <td>{tx.method}</td>
+                    <td style={{ fontSize: '0.85rem' }}>{tx.method}</td>
                     <td>
-                      <div className="tx-actions">
+                      <div className="tx-actions" style={{ justifyContent: 'flex-end' }}>
                         <button className="tx-edit-btn" onClick={() => handleEditClick(tx)} title="Editar">
                           <Edit2 size={16} />
                         </button>
@@ -432,6 +433,37 @@ const Sales = () => {
               )}
             </tbody>
           </table>
+
+          {/* Vista de Tarjetas (Mobile) */}
+          <div className="sales-cards-mobile mobile-only">
+            {filteredTransactions.length === 0 ? (
+              <div className="empty-table-msg" style={{ padding: '40px', textAlign: 'center' }}>
+                No hay movimientos registrados aún
+              </div>
+            ) : (
+              filteredTransactions.map((tx) => (
+                <div key={tx.id} className="sales-card-mobile glass">
+                  <div className="card-top">
+                    <span className="tx-date-mobile">{new Date(tx.date).toLocaleDateString()}</span>
+                    <span className={`type-badge ${tx.type.toLowerCase()}`}>{tx.type}</span>
+                  </div>
+                  <div className="card-mid">
+                    <p className="tx-concept-mobile">{tx.product || tx.description}</p>
+                    <p className={`tx-amount-mobile ${tx.type.toLowerCase() === 'egreso' ? 'text-danger' : 'text-accent'}`}>
+                      {tx.type.toLowerCase() === 'egreso' ? '-' : '+'}${formatUSD(tx.amount)}
+                    </p>
+                  </div>
+                  <div className="card-bottom">
+                    <span className="tx-method-mobile"><CreditCard size={12} /> {tx.method}</span>
+                    <div className="tx-actions-mobile">
+                      <button onClick={() => handleEditClick(tx)}><Edit2 size={16} /></button>
+                      <button onClick={() => handleDeleteTransaction(tx.id)}><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
       </div>
