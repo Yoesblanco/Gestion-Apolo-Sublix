@@ -104,12 +104,20 @@ app.post('/api/auth/update', async (req, res) => {
 // El timestamp de la última sincronización se lee/escribe directamente en la tabla 'meta' de Supabase.
 
 const getServerTimestamp = async () => {
-  const { data } = await supabase.from('meta').select('value').eq('key', 'last_sync').single();
-  return data ? Number(data.value) : 1;
+  try {
+    const { data } = await supabase.from('meta').select('value').eq('key', 'last_sync').single();
+    return data ? Number(data.value) : 1;
+  } catch {
+    return 1; // Si la tabla no existe o está vacía, devuelve 1 como fallback
+  }
 };
 
 const setServerTimestamp = async (ts) => {
-  await supabase.from('meta').upsert({ key: 'last_sync', value: String(ts) });
+  try {
+    await supabase.from('meta').upsert({ key: 'last_sync', value: String(ts) });
+  } catch (e) {
+    console.warn('No se pudo guardar timestamp en meta:', e.message);
+  }
 };
 
 // Obtener toda la base de datos (Formato Frontend)
