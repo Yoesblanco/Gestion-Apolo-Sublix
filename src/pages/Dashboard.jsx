@@ -66,7 +66,7 @@ const Dashboard = () => {
           if (t.date.includes('T')) {
             dateStr = t.date.split('T')[0];
           } else {
-            const parts = t.date.split(/[/\- \s]+/);
+            const parts = t.date.split(/[/\s,-]+/);
             if (parts.length >= 3) {
               if (parts[0].length === 4) dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
               else dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
