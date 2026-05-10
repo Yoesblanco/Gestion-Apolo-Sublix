@@ -9,7 +9,6 @@ import {
   ArrowUpRight, 
   PlusCircle,
   MinusCircle,
-  ArrowLeft,
   Package,
   CreditCard,
   Layers,
@@ -305,9 +304,6 @@ const Sales = () => {
       <div className="sales animate-fade-in">
       <div className="page-header">
         <div className="header-title-area">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </button>
           <div>
             <h2>Ventas y Finanzas</h2>
             <p>Informe detallado de ingresos y egresos</p>

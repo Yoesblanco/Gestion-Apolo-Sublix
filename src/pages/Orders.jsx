@@ -14,7 +14,6 @@ import {
   User,
   FileText,
   Trash2,
-  ArrowLeft,
   Package,
   Hash,
   Banknote,
@@ -886,9 +885,6 @@ const Orders = () => {
 
       <div className="page-header">
         <div className="header-title-area">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </button>
           <div>
             <h2>Gestión de Pedidos</h2>
             <p>Seguimiento y registro de trabajos de personalización</p>

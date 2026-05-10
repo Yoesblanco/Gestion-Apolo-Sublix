@@ -9,7 +9,6 @@ import {
   MapPin, 
   Plus, 
   Trash2, 
-  ArrowLeft,
   X,
   Search,
   ShoppingBag,
@@ -183,9 +182,6 @@ const Customers = () => {
     <div className="customers animate-fade-in">
       <div className="page-header">
         <div className="header-title-area">
-          <button className="back-btn" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </button>
           <div>
             <h2>Clientes</h2>
             <p>Base de datos de clientes de Apolo Sublix</p>

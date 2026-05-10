@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Search, Plus, Filter, ArrowLeft, Trash2, X,
+  Search, Plus, Filter, Trash2, X,
   Package, Tag, Hash, Banknote, AlertTriangle,
   Clock, PlusCircle, Edit
 } from 'lucide-react';
@@ -406,7 +406,6 @@ const Inventory = () => {
       <div className="inventory animate-fade-in">
         <div className="page-header">
           <div className="header-title-area">
-            <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
             <div>
               <h2>Inventario</h2>
               <p>Gestión de stock de Apolo Sublix</p>
