@@ -100,7 +100,7 @@ app.post('/api/auth/update', async (req, res) => {
 });
 
 // --- DATA ROUTES ---
-let serverLastUpdated = Date.now();
+let serverLastUpdated = 1; // Inicializamos en 1 para que el primer dispositivo que se conecte tras un reinicio mande sus datos locales si son más nuevos
 
 // Obtener toda la base de datos (Formato Frontend)
 app.get('/api/data', async (req, res) => {
