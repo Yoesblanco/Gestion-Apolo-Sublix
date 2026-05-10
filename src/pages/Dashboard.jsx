@@ -23,11 +23,11 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { salesTotals, products, customers, orders, transactions } = useAppContext();
 
-  const greeting = useMemo(() => {
+  const contextLabel = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return '¡Buenos días';
-    if (hour < 18) return '¡Buenas tardes';
-    return '¡Buenas noches';
+    if (hour < 12) return 'Resumen Matutino';
+    if (hour < 18) return 'Gestión de Tarde';
+    return 'Cierre de Jornada';
   }, []);
 
   const stats = [
@@ -112,8 +112,8 @@ const Dashboard = () => {
       {/* Welcome Header */}
       <div className="welcome-header">
         <div className="welcome-text">
-          <h1>{greeting}, {user?.name?.split(' ')[0] || 'Administrador'}!</h1>
-          <p>Esto es lo que está pasando en <span>{user?.businessName || 'Apolo Sublix'}</span> hoy.</p>
+          <h1>{contextLabel}</h1>
+          <p>Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Estado actual de {user?.businessName || 'Apolo Sublix'}.</p>
         </div>
         <div className="quick-actions-bar">
           <button className="action-btn" style={{ background: 'var(--danger)', color: 'white', border: 'none' }} onClick={() => {
