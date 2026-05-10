@@ -189,7 +189,12 @@ const Inventory = () => {
     }
 
     setProducts(products.map(p => p.id === selectedProduct.id
-      ? { ...p, stock: newStock, status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock' }
+      ? { 
+          ...p, 
+          stock: newStock, 
+          price: parseFloat(purchasePrice) > 0 ? parseFloat(purchasePrice) : p.price,
+          status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock' 
+        }
       : p
     ));
     setStockModalOpen(false);
@@ -272,7 +277,7 @@ const Inventory = () => {
                   value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} />
               </div>
               <div style={MODAL_GROUP}>
-                <label style={MODAL_LABEL}><Banknote size={14} /> Precio Unitario ($)</label>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Costo Unitario de Compra ($)</label>
                 <input style={MODAL_INPUT} type="number" step="0.01" required placeholder="0.00" min="0"
                   value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
               </div>
@@ -413,7 +418,7 @@ const Inventory = () => {
                 </select>
               </div>
               <div style={MODAL_GROUP}>
-                <label style={MODAL_LABEL}><Banknote size={14} /> Precio Unitario ($)</label>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Costo Unitario ($)</label>
                 <input style={MODAL_INPUT} type="number" step="0.01" required placeholder="0.00" min="0"
                   value={editFormData.price} onChange={e => setEditFormData({ ...editFormData, price: e.target.value })} />
               </div>
@@ -459,11 +464,10 @@ const Inventory = () => {
               <tr>
                 <th>Producto</th>
                 <th>Categoría</th>
-                <th>Disponible</th>
-                <th>Apartado</th>
-                <th>Precio (Venta)</th>
+                <th>Stock</th>
+                <th>Costo Unit. ($)</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
