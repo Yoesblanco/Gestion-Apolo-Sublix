@@ -180,7 +180,33 @@
 
 .table-container {
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-title-area {
+    width: 100%;
+  }
+  
+  .add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .table-controls {
+    flex-direction: column;
+  }
+  
+  .inventory-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 .inventory-table {
