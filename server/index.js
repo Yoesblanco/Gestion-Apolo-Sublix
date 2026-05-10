@@ -190,12 +190,20 @@ app.post('/api/data/sync', async (req, res) => {
     const data = req.body;
     
     // Aquí hacemos Upsert a todas las tablas para guardar el estado del frontend
-    if (data.products && data.products.length > 0) {
-      await supabase.from('products').upsert(data.products);
+    if (data.products) {
+      const productIds = data.products.map(p => p.id);
+      await supabase.from('products').delete().not('id', 'in', productIds);
+      if (data.products.length > 0) {
+        await supabase.from('products').upsert(data.products);
+      }
     }
     
-    if (data.customers && data.customers.length > 0) {
-      await supabase.from('customers').upsert(data.customers);
+    if (data.customers) {
+      const customerIds = data.customers.map(c => c.id);
+      await supabase.from('customers').delete().not('id', 'in', customerIds);
+      if (data.customers.length > 0) {
+        await supabase.from('customers').upsert(data.customers);
+      }
     }
 
     if (data.orders && data.orders.length > 0) {
@@ -230,21 +238,32 @@ app.post('/api/data/sync', async (req, res) => {
         };
       });
 
-      await supabase.from('orders').upsert(orders);
+      const orderIds = data.orders.map(o => o.id);
+      await supabase.from('orders').delete().not('id', 'in', orderIds);
       
-      if (payments.length > 0) {
-        // Para evitar colisiones temporales como pasó antes, solo insertamos los pagos
-        // O mejor aún, al hacer sync desde el frontend sobreescribimos los pagos si es upsert
-        await supabase.from('payments').upsert(payments, { onConflict: 'id' });
+      if (orders.length > 0) {
+        await supabase.from('orders').upsert(orders);
+        
+        if (payments.length > 0) {
+          // Nota: Para pagos es más complejo porque el ID es autogenerado o manejado por el frontend
+          // Por ahora hacemos upsert para mantener integridad
+          await supabase.from('payments').upsert(payments, { onConflict: 'id' });
+        }
       }
     }
 
-    if (data.transactions && data.transactions.length > 0) {
-      const txs = data.transactions.map(t => ({
-        id: t.id, date: t.date, amount: t.amount, type: t.type,
-        category: t.category, method: t.method, description: t.description, order_id: t.orderId
-      }));
-      await supabase.from('transactions').upsert(txs);
+    if (data.transactions) {
+      const txIds = data.transactions.map(t => t.id);
+      // Eliminar los que ya no están en la lista
+      await supabase.from('transactions').delete().not('id', 'in', txIds);
+      
+      if (data.transactions.length > 0) {
+        const txs = data.transactions.map(t => ({
+          id: t.id, date: t.date, amount: t.amount, type: t.type,
+          category: t.category, method: t.method, description: t.description, order_id: t.orderId
+        }));
+        await supabase.from('transactions').upsert(txs);
+      }
     }
 
     if (data.stockHistory && data.stockHistory.length > 0) {
