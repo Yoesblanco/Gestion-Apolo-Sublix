@@ -266,31 +266,43 @@ app.post('/api/data/sync', async (req, res) => {
       }
     }
 
-    if (data.stockHistory && data.stockHistory.length > 0) {
-      const stock = data.stockHistory.map(s => ({
-        id: s.id, date: s.date, type: s.type, product_name: s.productName,
-        customer: s.customer, quantity: s.quantity, order_id: s.orderId, notes: s.notes
-      }));
-      await supabase.from('stock_history').upsert(stock);
+    if (data.stockHistory) {
+      const shIds = data.stockHistory.map(s => s.id);
+      await supabase.from('stock_history').delete().not('id', 'in', shIds);
+      if (data.stockHistory.length > 0) {
+        const sh = data.stockHistory.map(s => ({
+          id: s.id, date: s.date, type: s.type, product_name: s.productName,
+          customer: s.customer, quantity: s.quantity, order_id: s.orderId, notes: s.notes
+        }));
+        await supabase.from('stock_history').upsert(sh);
+      }
     }
 
-    if (data.toBuy && data.toBuy.length > 0) {
-      const toBuy = data.toBuy.map(b => ({
-        id: b.id, product_name: b.productName, quantity: b.quantity, notes: b.notes,
-        order_description: b.orderDescription, status: b.status, date_added: b.dateAdded,
-        order_id: b.orderId, customer: b.customer, product_id: b.productId
-      }));
-      await supabase.from('to_buy').upsert(toBuy);
+    if (data.toBuy) {
+      const tbIds = data.toBuy.map(b => b.id);
+      await supabase.from('to_buy').delete().not('id', 'in', tbIds);
+      if (data.toBuy.length > 0) {
+        const tb = data.toBuy.map(b => ({
+          id: b.id, product_name: b.productName, quantity: b.quantity, notes: b.notes,
+          order_description: b.orderDescription, status: b.status, date_added: b.dateAdded,
+          order_id: b.orderId, customer: b.customer, product_id: b.productId
+        }));
+        await supabase.from('to_buy').upsert(tb);
+      }
     }
 
-    if (data.toBuyHistory && data.toBuyHistory.length > 0) {
-      const toBuyHistory = data.toBuyHistory.map(h => ({
-        id: h.id, product_name: h.productName, quantity: h.quantity, notes: h.notes,
-        order_description: h.orderDescription, status: h.status, date_added: h.dateAdded,
-        order_id: h.orderId, customer: h.customer, date_bought: h.dateBought,
-        purchase_price: h.purchasePrice, product_id: h.productId, transaction_id: h.transactionId
-      }));
-      await supabase.from('to_buy_history').upsert(toBuyHistory);
+    if (data.toBuyHistory) {
+      const tbhIds = data.toBuyHistory.map(h => h.id);
+      await supabase.from('to_buy_history').delete().not('id', 'in', tbhIds);
+      if (data.toBuyHistory.length > 0) {
+        const tbh = data.toBuyHistory.map(h => ({
+          id: h.id, product_name: h.productName, quantity: h.quantity, notes: h.notes,
+          order_description: h.orderDescription, status: h.status, date_added: h.dateAdded,
+          order_id: h.order_id, customer: h.customer, date_bought: h.dateBought,
+          purchase_price: h.purchasePrice, product_id: h.productId, transaction_id: h.transactionId
+        }));
+        await supabase.from('to_buy_history').upsert(tbh);
+      }
     }
 
     res.json({ message: 'Datos sincronizados a Supabase con éxito' });
