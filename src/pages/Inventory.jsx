@@ -10,6 +10,33 @@ import { formatUSD } from '../utils/formatters';
 import './Inventory.css';
 
 /* ── Estilos inline reutilizables para los modales ── */
+
+/** Overlay: siempre centrado vertical y horizontal, incluso en mobile */
+const MODAL_OVERLAY_STYLE = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)',
+  zIndex: 3000,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '1rem',
+  boxSizing: 'border-box',
+  overflowY: 'auto'
+};
+
+/** Contenedor del modal: ancho máximo + altura máxima + scroll interno */
+const modalContentStyle = (maxW = '480px') => ({
+  background: '#1a1a2e',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '20px',
+  width: '100%',
+  maxWidth: maxW,
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+  padding: '28px',
+  boxSizing: 'border-box',
+  margin: 'auto'
+});
+
 const MODAL_INPUT = {
   width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
   background: 'var(--surface)', border: '1px solid var(--border)',
@@ -213,8 +240,8 @@ const Inventory = () => {
     <>
       {/* ══════════════ MODAL: AÑADIR PRODUCTO ══════════════ */}
       {addModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setAddModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '480px', maxWidth: '95vw', padding: '28px' }}>
+        <div style={MODAL_OVERLAY_STYLE} onClick={() => setAddModalOpen(false)}>
+          <div style={modalContentStyle('480px')} onClick={e => e.stopPropagation()}>
             <ModalHeader icon={Plus} title="Registrar Nuevo Producto" subtitle="Completa los datos del producto" onClose={() => setAddModalOpen(false)} />
             <form onSubmit={handleAddProduct}>
               <div style={MODAL_GROUP}>
@@ -247,8 +274,8 @@ const Inventory = () => {
 
       {/* ══════════════ MODAL: HISTORIAL GLOBAL ══════════════ */}
       {historyModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setHistoryModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '700px', maxWidth: '95vw', padding: '28px' }}>
+        <div style={MODAL_OVERLAY_STYLE} onClick={() => setHistoryModalOpen(false)}>
+          <div style={modalContentStyle('680px')} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
@@ -329,8 +356,8 @@ const Inventory = () => {
 
       {/* ══════════════ MODAL: AGREGAR STOCK ══════════════ */}
       {stockModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setStockModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '440px', maxWidth: '95vw', padding: '28px' }}>
+        <div style={MODAL_OVERLAY_STYLE} onClick={() => setStockModalOpen(false)}>
+          <div style={modalContentStyle('440px')} onClick={e => e.stopPropagation()}>
             <ModalHeader icon={PlusCircle} title="Agregar Stock" subtitle={`Producto: ${selectedProduct?.name}`} onClose={() => setStockModalOpen(false)} />
             <form onSubmit={handleUpdateStock}>
               <div style={MODAL_GROUP}>
@@ -351,8 +378,8 @@ const Inventory = () => {
 
       {/* ══════════════ MODAL: EDITAR PRODUCTO ══════════════ */}
       {editModalOpen && (
-        <div className="modal-overlay animate-fade-in" onClick={() => setEditModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '480px', maxWidth: '95vw', padding: '28px' }}>
+        <div style={MODAL_OVERLAY_STYLE} onClick={() => setEditModalOpen(false)}>
+          <div style={modalContentStyle('480px')} onClick={e => e.stopPropagation()}>
             <ModalHeader icon={Edit} title="Editar Producto" subtitle="Modifica nombre, categoría o precio" onClose={() => setEditModalOpen(false)} />
             <form onSubmit={handleEditProduct}>
               <div style={MODAL_GROUP}>
