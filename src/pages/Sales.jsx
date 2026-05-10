@@ -326,105 +326,38 @@ const Sales = () => {
       </div>
 
       <div className="sales-overview">
-        <div className="overview-card glass">
-          <div className="card-header">
-            <span className="card-title">Balance Neto</span>
-            <TrendingUp size={20} className="text-accent" />
+        <div className="overview-card glass" onClick={() => setFilter('all')} style={{ cursor: 'pointer' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
+            <TrendingUp size={24} />
           </div>
-          <div className="card-body">
-            <h3>${formatUSD(salesTotals.total)}</h3>
-            <span className="card-subtitle success">
-              <ArrowUpRight size={14} /> Neto actual
-            </span>
+          <div className="stat-info">
+            <span className="stat-label">Balance Neto</span>
+            <h3 className="stat-value">${formatUSD(salesTotals.total)}</h3>
+            <span className="stat-sub">Capital actual</span>
           </div>
         </div>
 
-        <div className="overview-card glass">
-          <div className="card-header">
-            <span className="card-title">Ingresos Totales</span>
-            <PlusCircle size={20} className="text-primary" />
+        <div className="overview-card glass" onClick={() => setFilter('ingreso')} style={{ cursor: 'pointer' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+            <PlusCircle size={24} />
           </div>
-          <div className="card-body">
-            <h3 className="text-primary">${formatUSD(salesTotals.ingresos)}</h3>
-            <span className="card-subtitle success">
-              Entradas
-            </span>
+          <div className="stat-info">
+            <span className="stat-label">Ingresos</span>
+            <h3 className="stat-value" style={{ color: '#10b981' }}>${formatUSD(salesTotals.ingresos)}</h3>
+            <span className="stat-sub">Entradas totales</span>
           </div>
         </div>
 
-        <div className="overview-card glass">
-          <div className="card-header">
-            <span className="card-title">Egresos Totales</span>
-            <MinusCircle size={20} className="text-danger" />
+        <div className="overview-card glass" onClick={() => setFilter('egreso')} style={{ cursor: 'pointer' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
+            <MinusCircle size={24} />
           </div>
-          <div className="card-body">
-            <h3 className="text-danger">${formatUSD(salesTotals.egresos)}</h3>
-            <span className="card-subtitle danger">
-              Salidas y gastos
-            </span>
+          <div className="stat-info">
+            <span className="stat-label">Egresos</span>
+            <h3 className="stat-value" style={{ color: '#ef4444' }}>${formatUSD(salesTotals.egresos)}</h3>
+            <span className="stat-sub">Gastos y compras</span>
           </div>
         </div>
-      </div>
-
-      <div className="reporting-section glass">
-        <h3>Reportar Movimiento</h3>
-        <form onSubmit={handleAddTransaction} className="reporting-form">
-          <div className="form-group">
-            <label><Package size={14} /> Concepto / Producto</label>
-            <input 
-              type="text" 
-              placeholder="Ej: Venta Taza" 
-              value={formData.product}
-              onChange={(e) => setFormData({...formData, product: e.target.value})}
-            />
-          </div>
-          <div className="form-group">
-            <label><Banknote size={14} /> Monto ($)</label>
-            <input 
-              type="number" 
-              step="0.01" 
-              placeholder="0.00"
-              value={formData.amount}
-              onChange={(e) => setFormData({...formData, amount: e.target.value})}
-            />
-          </div>
-          <div className="form-group">
-            <label><CreditCard size={14} /> Método de Pago</label>
-            <select 
-              value={formData.method}
-              onChange={(e) => setFormData({...formData, method: e.target.value})}
-            >
-              <option value="EFECTIVO BCV">EFECTIVO BCV</option>
-              <option value="TRANSFERENCIA BCV">TRANSFERENCIA BCV</option>
-              <option value="USD">USD</option>
-              <option value="USDT">USDT</option>
-              <option value="ZINLI">ZINLI</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label><Layers size={14} /> Tipo de Movimiento</label>
-            <div className="type-toggle">
-              <button 
-                type="button"
-                className={`type-btn ${formData.type === 'ingreso' ? 'active-ingreso' : ''}`}
-                onClick={() => setFormData({...formData, type: 'ingreso'})}
-              >
-                Ingreso
-              </button>
-              <button 
-                type="button"
-                className={`type-btn ${formData.type === 'egreso' ? 'active-egreso' : ''}`}
-                onClick={() => setFormData({...formData, type: 'egreso'})}
-              >
-                Egreso
-              </button>
-            </div>
-          </div>
-          <button type="submit" className="submit-tx-btn">
-            <PlusCircle size={20} />
-            Registrar Movimiento
-          </button>
-        </form>
       </div>
 
       <div className="transactions-section glass">
