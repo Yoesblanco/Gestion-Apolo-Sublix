@@ -163,7 +163,7 @@ const Dashboard = () => {
                           style={{ height: `${(d.egresos / maxVal) * 100}%` }}
                         />
                       </div>
-                      <span className="evo-label">{d.day}</span>
+                      <span className="evo-label">{d.date}</span>
                     </div>
                   ))}
                 </div>
