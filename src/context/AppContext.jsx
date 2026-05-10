@@ -49,6 +49,7 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState(storedData.theme);
   const [toasts, setToasts] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [dataLoadedCorrectly, setDataLoadedCorrectly] = useState(false); // Nuevo candado de seguridad
 
   // Flag para evitar guardar en localStorage en el primer render (ya viene de allí)
   const isFirstRender = useRef(true);
@@ -103,10 +104,17 @@ export const AppProvider = ({ children }) => {
         } else {
           console.log('Los datos locales ya están actualizados.');
         }
+        // Si llegamos aquí, la comunicación con el servidor fue exitosa
+        setDataLoadedCorrectly(true);
       } catch (err) {
         console.warn('Usando datos locales: No se pudo contactar con el servidor.');
+        // Si hay datos locales, permitimos operar (offline mode), 
+        // pero si está todo vacío y falló el servidor, mantenemos el candado cerrado.
+        const localData = loadFromStorage();
+        if (localData.orders.length > 0 || localData.customers.length > 0) {
+          setDataLoadedCorrectly(true);
+        }
       } finally {
-        // Importante: No marcamos como inicializado hasta que hayamos intentado cargar todo
         setIsInitialized(true);
       }
     };
@@ -117,7 +125,8 @@ export const AppProvider = ({ children }) => {
 
   // Sincronizar al backend cuando hay cambios
   useEffect(() => {
-    if (!isInitialized) return;
+    // EL CANDADO: Solo sincronizamos si la app está inicializada Y los datos cargaron correctamente
+    if (!isInitialized || !dataLoadedCorrectly) return;
     
     syncTimestamp.current = Date.now();
     
