@@ -100,7 +100,17 @@ app.post('/api/auth/update', async (req, res) => {
 });
 
 // --- DATA ROUTES ---
-let serverLastUpdated = 1; // Inicializamos en 1 para que el primer dispositivo que se conecte tras un reinicio mande sus datos locales si son más nuevos
+// NOTA: serverLastUpdated ya NO se guarda en RAM (se perdía al reiniciar el servidor).
+// El timestamp de la última sincronización se lee/escribe directamente en la tabla 'meta' de Supabase.
+
+const getServerTimestamp = async () => {
+  const { data } = await supabase.from('meta').select('value').eq('key', 'last_sync').single();
+  return data ? Number(data.value) : 1;
+};
+
+const setServerTimestamp = async (ts) => {
+  await supabase.from('meta').upsert({ key: 'last_sync', value: String(ts) });
+};
 
 // Obtener toda la base de datos (Formato Frontend)
 app.get('/api/data', async (req, res) => {
@@ -175,7 +185,7 @@ app.get('/api/data', async (req, res) => {
         orderId: h.order_id, customer: h.customer, dateBought: h.date_bought,
         purchasePrice: h.purchase_price, productId: h.product_id, transactionId: h.transaction_id
       })),
-      lastSync: serverLastUpdated
+      lastSync: await getServerTimestamp()
     };
 
     res.json(dbFormat);
@@ -189,133 +199,122 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/data/sync', async (req, res) => {
   try {
     const data = req.body;
-    // --- PRODUCTOS (Sincronización Inteligente con Umbral) ---
-    if (data.products && Array.isArray(data.products)) {
-      const { data: current } = await supabase.from('products').select('id');
-      const currentCount = current ? current.length : 0;
+
+    // Función auxiliar para hacer un sync seguro por tabla:
+    // - Si la lista TIENE elementos: borra los que no están en la lista y hace upsert de los que sí.
+    // - Si la lista está VACÍA: solo borra (el usuario borró el último elemento intencionalmente).
+    // - Si la lista es undefined/null: ignora la tabla (no se tocó en este ciclo).
+    const syncTable = async (tableName, items, mapFn, idField = 'id') => {
+      if (!items || !Array.isArray(items)) return; // No vino este campo, ignorar
       
-      if (data.products.length > 0 || currentCount <= 3) {
-        const pIds = data.products.map(p => p.id);
-        await supabase.from('products').delete().not('id', 'in', pIds);
-        if (data.products.length > 0) await supabase.from('products').upsert(data.products);
+      const mapped = items.map(mapFn);
+      const ids = mapped.map(r => r[idField]);
+      
+      if (ids.length > 0) {
+        // Hay elementos: borra los que no están y actualiza/inserta los que sí
+        await supabase.from(tableName).delete().not(idField, 'in', ids);
+        await supabase.from(tableName).upsert(mapped);
+      } else {
+        // Lista vacía: el usuario borró el último, borrar todo en la tabla
+        await supabase.from(tableName).delete().neq(idField, 0);
       }
-    }
-    
-    // --- CLIENTES (Sincronización Inteligente con Umbral) ---
-    if (data.customers && Array.isArray(data.customers)) {
-      const { data: current } = await supabase.from('customers').select('id');
-      const currentCount = current ? current.length : 0;
+    };
 
-      if (data.customers.length > 0 || currentCount <= 3) {
-        const cIds = data.customers.map(c => c.id);
-        await supabase.from('customers').delete().not('id', 'in', cIds);
-        if (data.customers.length > 0) await supabase.from('customers').upsert(data.customers);
-      }
-    }
+    // --- PRODUCTOS ---
+    await syncTable('products', data.products, p => p);
 
-    // --- TRANSACCIONES (Sincronización Inteligente con Umbral) ---
-    if (data.transactions && Array.isArray(data.transactions)) {
-      const { data: current } = await supabase.from('transactions').select('id');
-      const currentCount = current ? current.length : 0;
+    // --- CLIENTES ---
+    await syncTable('customers', data.customers, c => c);
 
-      if (data.transactions.length > 0 || currentCount <= 3) {
-        const txs = data.transactions.map(t => ({
-          id: t.id, date: t.date, amount: t.amount, type: t.type,
-          category: t.category, method: t.method, description: t.description, order_id: t.orderId
-        }));
-        const tIds = txs.map(t => t.id);
-        await supabase.from('transactions').delete().not('id', 'in', tIds);
-        if (txs.length > 0) await supabase.from('transactions').upsert(txs);
-      }
-    }
+    // --- TRANSACCIONES ---
+    await syncTable('transactions', data.transactions, t => ({
+      id: t.id, date: t.date, amount: t.amount, type: t.type,
+      category: t.category, method: t.method, description: t.description, order_id: t.orderId
+    }));
 
-    // --- PEDIDOS Y PAGOS (Sincronización Inteligente con Umbral) ---
+    // --- PEDIDOS Y PAGOS (lógica especial por la relación entre tablas) ---
     if (data.orders && Array.isArray(data.orders)) {
-      const { data: current } = await supabase.from('orders').select('id');
-      const currentCount = current ? current.length : 0;
+      const oIds = data.orders.map(o => o.id);
+      const allPayments = [];
 
-      if (data.orders.length > 0 || currentCount <= 3) {
-        const oIds = data.orders.map(o => o.id);
-        const payments = [];
-        const orders = data.orders.map(o => {
-          const { payments: orderPayments, ...orderData } = o;
-          if (orderPayments) {
-            orderPayments.forEach(p => {
-              payments.push({
-                id: Math.round(Number(p.id)),
-                order_id: o.id,
-                amount: p.amount,
-                payment_date: p.date,
-                method: p.method,
-                notes: p.notes,
-                transaction_id: p.transactionId ? Math.round(Number(p.transactionId)) : null
-              });
+      const orders = data.orders.map(o => {
+        const { payments: orderPayments, ...orderData } = o;
+        if (orderPayments) {
+          orderPayments.forEach(p => {
+            allPayments.push({
+              id: Math.round(Number(p.id)),
+              order_id: o.id,
+              amount: p.amount,
+              payment_date: p.date,
+              method: p.method,
+              notes: p.notes,
+              transaction_id: p.transactionId ? Math.round(Number(p.transactionId)) : null
             });
-          }
-          return {
-            id: orderData.id,
-            customer_id: orderData.customerId,
-            customer_name: orderData.customer,
-            product_name: orderData.productName,
-            order_date: orderData.date,
-            delivery_date: orderData.deliveryDate,
-            total: orderData.total,
-            status: orderData.status,
-            description: orderData.desc,
-            quantity: orderData.quantity,
-            pending_stock_to_subtract: orderData.pendingStockToSubtract
-          };
-        });
+          });
+        }
+        return {
+          id: orderData.id,
+          customer_id: orderData.customerId,
+          customer_name: orderData.customer,
+          product_name: orderData.productName,
+          order_date: orderData.date,
+          delivery_date: orderData.deliveryDate,
+          total: orderData.total,
+          status: orderData.status,
+          description: orderData.desc,
+          quantity: orderData.quantity,
+          pending_stock_to_subtract: orderData.pendingStockToSubtract
+        };
+      });
 
-        const pIds = payments.map(p => p.id);
+      // Borrar pedidos eliminados (o todos si la lista está vacía)
+      if (oIds.length > 0) {
+        await supabase.from('orders').delete().not('id', 'in', oIds);
+        await supabase.from('orders').upsert(orders);
+      } else {
+        await supabase.from('payments').delete().neq('id', 0);
+        await supabase.from('orders').delete().neq('id', 0);
+      }
+
+      // Sincronizar pagos de los pedidos que aún existen
+      if (oIds.length > 0) {
+        const pIds = allPayments.map(p => p.id);
         if (pIds.length > 0) {
           await supabase.from('payments').delete().not('id', 'in', pIds).in('order_id', oIds);
-        } else if (oIds.length === 0) {
-          // Si borramos todos los pedidos, borramos todos los pagos
-          await supabase.from('payments').delete().neq('id', 0);
+          await supabase.from('payments').upsert(allPayments);
+        } else {
+          // Los pedidos existen pero no tienen pagos, borrar pagos huérfanos
+          await supabase.from('payments').delete().in('order_id', oIds);
         }
-
-        await supabase.from('orders').delete().not('id', 'in', oIds);
-        if (orders.length > 0) await supabase.from('orders').upsert(orders);
-        if (payments.length > 0) await supabase.from('payments').upsert(payments);
       }
     }
 
-    if (data.stockHistory && Array.isArray(data.stockHistory) && data.stockHistory.length > 0) {
-      const shIds = data.stockHistory.map(s => s.id);
-      await supabase.from('stock_history').delete().not('id', 'in', shIds);
-      const sh = data.stockHistory.map(s => ({
-        id: s.id, date: s.date, type: s.type, product_name: s.productName,
-        customer: s.customer, quantity: s.quantity, order_id: s.orderId, notes: s.notes
-      }));
-      await supabase.from('stock_history').upsert(sh);
-    }
+    // --- HISTORIAL DE STOCK ---
+    await syncTable('stock_history', data.stockHistory, s => ({
+      id: s.id, date: s.date, type: s.type, product_name: s.productName,
+      customer: s.customer, quantity: s.quantity, order_id: s.orderId, notes: s.notes
+    }));
 
-    if (data.toBuy && Array.isArray(data.toBuy) && data.toBuy.length > 0) {
-      const tbIds = data.toBuy.map(b => b.id);
-      await supabase.from('to_buy').delete().not('id', 'in', tbIds);
-      const tb = data.toBuy.map(b => ({
-        id: b.id, product_name: b.productName, quantity: b.quantity, notes: b.notes,
-        order_description: b.orderDescription, status: b.status, date_added: b.dateAdded,
-        order_id: b.orderId, customer: b.customer, product_id: b.productId
-      }));
-      await supabase.from('to_buy').upsert(tb);
-    }
+    // --- LISTA DE COMPRAS ---
+    await syncTable('to_buy', data.toBuy, b => ({
+      id: b.id, product_name: b.productName, quantity: b.quantity, notes: b.notes,
+      order_description: b.orderDescription, status: b.status, date_added: b.dateAdded,
+      order_id: b.orderId, customer: b.customer, product_id: b.productId
+    }));
 
-    if (data.toBuyHistory && Array.isArray(data.toBuyHistory) && data.toBuyHistory.length > 0) {
-      const tbhIds = data.toBuyHistory.map(h => h.id);
-      await supabase.from('to_buy_history').delete().not('id', 'in', tbhIds);
-      const tbh = data.toBuyHistory.map(h => ({
-        id: h.id, product_name: h.productName, quantity: h.quantity, notes: h.notes,
-        order_description: h.orderDescription, status: h.status, date_added: h.dateAdded,
-        order_id: h.order_id, customer: h.customer, date_bought: h.dateBought,
-        purchase_price: h.purchasePrice, product_id: h.productId, transaction_id: h.transactionId
-      }));
-      await supabase.from('to_buy_history').upsert(tbh);
-    }
+    // --- HISTORIAL DE COMPRAS ---
+    await syncTable('to_buy_history', data.toBuyHistory, h => ({
+      id: h.id, product_name: h.productName, quantity: h.quantity, notes: h.notes,
+      order_description: h.orderDescription, status: h.status, date_added: h.dateAdded,
+      order_id: h.order_id, customer: h.customer, date_bought: h.dateBought,
+      purchase_price: h.purchasePrice, product_id: h.productId, transaction_id: h.transactionId
+    }));
 
-    serverLastUpdated = data.timestamp || Date.now();
-    res.json({ message: 'Datos sincronizados a Supabase con éxito', lastSync: serverLastUpdated });
+    // Persistir el timestamp en Supabase (no en RAM, para sobrevivir reinicios del servidor)
+    const newTimestamp = data.timestamp || Date.now();
+    await setServerTimestamp(newTimestamp);
+    
+    res.json({ message: 'Datos sincronizados a Supabase con éxito', lastSync: newTimestamp });
   } catch (error) {
     console.error('Error syncing to Supabase:', error);
     res.status(500).json({ message: 'Error syncing database' });

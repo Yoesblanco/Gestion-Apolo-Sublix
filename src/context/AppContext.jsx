@@ -144,7 +144,7 @@ export const AppProvider = ({ children }) => {
         timestamp: syncTimestamp.current
       }),
     }).catch(() => { });
-  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, isInitialized]);
+  }, [transactions, orders, customers, products, toBuy, toBuyHistory, stockHistory, isInitialized, dataLoadedCorrectly]);
 
   const salesTotals = useMemo(() => {
     const ingresos = transactions
