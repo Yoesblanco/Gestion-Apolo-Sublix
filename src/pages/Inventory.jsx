@@ -1,62 +1,91 @@
 import { useState } from 'react';
 import {
-  Search,
-  Plus,
-  Filter,
-  ArrowLeft,
-  Trash2,
-  X,
-  Package,
-  Tag,
-  Hash,
-  Banknote,
-  AlertTriangle,
-  Clock,
-  PlusCircle,
-  Edit
+  Search, Plus, Filter, ArrowLeft, Trash2, X,
+  Package, Tag, Hash, Banknote, AlertTriangle,
+  Clock, PlusCircle, Edit
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { formatUSD } from '../utils/formatters';
 import './Inventory.css';
 
+/* ── Estilos inline reutilizables para los modales ── */
+const MODAL_INPUT = {
+  width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
+  background: 'var(--surface)', border: '1px solid var(--border)',
+  color: 'var(--text)', fontSize: '0.95rem', boxSizing: 'border-box'
+};
+const MODAL_LABEL = {
+  display: 'flex', alignItems: 'center', gap: '6px',
+  fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600,
+  marginBottom: '6px'
+};
+const MODAL_GROUP = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
+const MODAL_BTN_PRIMARY = {
+  width: '100%', padding: '0.85rem', borderRadius: '12px',
+  background: 'linear-gradient(135deg, var(--primary), #0284c7)',
+  color: 'white', border: 'none', fontWeight: 700,
+  fontSize: '1rem', cursor: 'pointer', marginTop: '4px'
+};
+const MODAL_BTN_SUCCESS = {
+  ...MODAL_BTN_PRIMARY,
+  background: 'linear-gradient(135deg, var(--accent), #059669)'
+};
+
+/* ── Componente de cabecera de modal reutilizable ── */
+const ModalHeader = ({ icon: Icon, title, subtitle, onClose }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {Icon && (
+        <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
+          <Icon size={20} style={{ color: 'var(--primary)' }} />
+        </div>
+      )}
+      <div>
+        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{title}</h3>
+        {subtitle && <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{subtitle}</p>}
+      </div>
+    </div>
+    <button
+      onClick={onClose}
+      style={{
+        background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+        color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
+        width: '36px', height: '36px', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', flexShrink: 0
+      }}
+    >
+      <X size={18} />
+    </button>
+  </div>
+);
+
 const Inventory = () => {
   const navigate = useNavigate();
-  const { 
-    products, 
-    setProducts, 
-    stockHistory = [], 
-    setStockHistory, 
-    setTransactions,
-    setToBuy,
-    setToBuyHistory,
-    orders = [],
-    setOrders
+  const {
+    products, setProducts,
+    stockHistory = [], setStockHistory,
+    setTransactions, setToBuy, setToBuyHistory,
+    orders = [], setOrders
   } = useAppContext();
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    category: 'Sublimación',
-    stock: '',
-    price: ''
-  });
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const [stockModalOpen, setStockModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [stockToAdd, setStockToAdd] = useState('');
-  const [editFormData, setEditFormData] = useState({
-    name: '',
-    category: 'Sublimación',
-    price: ''
-  });
 
+  const [addModalOpen,     setAddModalOpen]     = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [stockModalOpen,   setStockModalOpen]   = useState(false);
+  const [editModalOpen,    setEditModalOpen]     = useState(false);
+  const [selectedProduct,  setSelectedProduct]  = useState(null);
+  const [stockToAdd,       setStockToAdd]       = useState('');
+
+  const [formData, setFormData] = useState({ name: '', category: 'Sublimación', stock: '', price: '' });
+  const [editFormData, setEditFormData] = useState({ name: '', category: 'Sublimación', price: '' });
+
+  /* ── Handlers ── */
   const handleAddProduct = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.stock || !formData.price) return;
 
     if (products.some(p => p.name.toLowerCase() === formData.name.toLowerCase())) {
-      alert(`Ya existe un producto llamado "${formData.name}". Por favor usa un nombre diferente.`);
+      alert(`Ya existe un producto llamado "${formData.name}".`);
       return;
     }
 
@@ -70,104 +99,63 @@ const Inventory = () => {
     };
 
     if (newProduct.stock > 0) {
-      const historyEntry = {
-        id: Date.now() + 1,
-        date: new Date().toISOString(),
-        type: 'Entrada',
-        productName: newProduct.name,
-        customer: 'Inventario Inicial',
-        quantity: newProduct.stock,
-        orderId: 'N/A',
-        notes: 'Registro de producto nuevo'
-      };
-      setStockHistory(prev => [historyEntry, ...(prev || [])]);
-    }
+      setStockHistory(prev => [{
+        id: Date.now() + 1, date: new Date().toISOString(), type: 'Entrada',
+        productName: newProduct.name, customer: 'Inventario Inicial',
+        quantity: newProduct.stock, orderId: 'N/A', notes: 'Registro de producto nuevo'
+      }, ...(prev || [])]);
 
-    if (newProduct.stock > 0) {
-      const totalCost = newProduct.stock * (newProduct.price || 0);
       setTransactions(prev => [{
-        id: `TX-INV-${Date.now()}`,
-        date: new Date().toISOString(),
-        amount: totalCost,
-        type: 'Egreso',
-        method: 'EFECTIVO BCV',
-        category: 'Inventario/Materia Prima',
+        id: `TX-INV-${Date.now()}`, date: new Date().toISOString(),
+        amount: newProduct.stock * (newProduct.price || 0),
+        type: 'Egreso', method: 'EFECTIVO BCV', category: 'Inventario/Materia Prima',
         description: `Stock inicial de ${newProduct.stock} unds de ${newProduct.name}`
       }, ...prev]);
     }
 
     setProducts([newProduct, ...products]);
     setFormData({ name: '', category: 'Sublimación', stock: '', price: '' });
-    setShowForm(false);
+    setAddModalOpen(false);
   };
 
   const handleDeleteProduct = (id) => {
-    const productToDelete = products.find(p => p.id === id);
-    if (!productToDelete) return;
-
-    const pendingOrdersCount = orders.filter(o => 
-      (o.productId === id || o.productName === productToDelete.name) && 
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    const pending = orders.filter(o =>
+      (o.productId === id || o.productName === p.name) &&
       o.status !== 'Entregado' && o.status !== 'Cancelado'
     ).length;
-
-    const hasReserved = (productToDelete.reserved || 0) > 0;
-
-    let warningMsg = `¿Deseas eliminar "${productToDelete.name}" del inventario?`;
-    
-    if (pendingOrdersCount > 0 || hasReserved) {
-      warningMsg = `¡ADVERTENCIA! "${productToDelete.name}" tiene ${pendingOrdersCount} pedidos activos y unidades apartadas.\n\nSi lo borras, estos pedidos perderán su vínculo con el stock. ¿Estás SEGURO de que quieres eliminarlo?`;
-    }
-
-    if (window.confirm(warningMsg)) {
-      setProducts(products.filter(p => p.id !== id));
-    }
+    const msg = pending > 0
+      ? `¡ADVERTENCIA! "${p.name}" tiene ${pending} pedidos activos.\n¿Estás seguro de eliminarlo?`
+      : `¿Deseas eliminar "${p.name}" del inventario?`;
+    if (window.confirm(msg)) setProducts(products.filter(x => x.id !== id));
   };
 
   const handleUpdateStock = (e) => {
     e.preventDefault();
     if (!selectedProduct || !stockToAdd) return;
+    const qty = parseInt(stockToAdd);
+    const newStock = selectedProduct.stock + qty;
 
-    const addedQty = parseInt(stockToAdd);
-    const newStock = selectedProduct.stock + addedQty;
+    setStockHistory(prev => [{
+      id: Date.now(), date: new Date().toISOString(), type: 'Entrada',
+      productName: selectedProduct.name, customer: 'Reposición de Mercancía',
+      quantity: qty, orderId: 'N/A', notes: 'Llegada de nueva mercancía'
+    }, ...(prev || [])]);
 
-    const historyEntry = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      type: 'Entrada',
-      productName: selectedProduct.name,
-      customer: 'Reposición de Mercancía',
-      quantity: addedQty,
-      orderId: 'N/A',
-      notes: 'Llegada de nueva mercancía'
-    };
-
-    const updatedProducts = products.map(p => {
-      if (p.id === selectedProduct.id) {
-        return {
-          ...p,
-          stock: newStock,
-          status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock'
-        };
-      }
-      return p;
-    });
-
-    if (addedQty > 0) {
-      const totalCost = addedQty * (selectedProduct.price || 0);
-      const newTransaction = {
-        id: `TX-REP-${Date.now()}`,
-        date: new Date().toISOString(),
-        amount: totalCost,
-        type: 'Egreso',
-        method: 'EFECTIVO BCV',
-        category: 'Inventario/Materia Prima',
-        description: `Reposición de ${addedQty} unds de ${selectedProduct.name}`
-      };
-      setTransactions(prev => [newTransaction, ...prev]);
+    if (qty > 0) {
+      setTransactions(prev => [{
+        id: `TX-REP-${Date.now()}`, date: new Date().toISOString(),
+        amount: qty * (selectedProduct.price || 0),
+        type: 'Egreso', method: 'EFECTIVO BCV', category: 'Inventario/Materia Prima',
+        description: `Reposición de ${qty} unds de ${selectedProduct.name}`
+      }, ...prev]);
     }
 
-    setProducts(updatedProducts);
-    setStockHistory(prev => [historyEntry, ...(prev || [])]);
+    setProducts(products.map(p => p.id === selectedProduct.id
+      ? { ...p, stock: newStock, status: newStock > 10 ? 'En Stock' : newStock > 0 ? 'Bajo Stock' : 'Sin Stock' }
+      : p
+    ));
     setStockModalOpen(false);
     setStockToAdd('');
     setSelectedProduct(null);
@@ -176,358 +164,240 @@ const Inventory = () => {
   const handleEditProduct = (e) => {
     e.preventDefault();
     if (!selectedProduct || !editFormData.name || !editFormData.price) return;
-
     const oldName = selectedProduct.name;
-    const newName = editFormData.name;
-    const normalizedNewName = newName.trim();
-    
-    if (normalizedNewName.toLowerCase() !== oldName.toLowerCase() && 
-        products.some(p => p.name.toLowerCase() === normalizedNewName.toLowerCase() && p.id !== selectedProduct.id)) {
-      alert(`Ya existe otro producto llamado "${normalizedNewName}". No puedes usar un nombre duplicado.`);
+    const newName = editFormData.name.trim();
+
+    if (newName.toLowerCase() !== oldName.toLowerCase() &&
+        products.some(p => p.name.toLowerCase() === newName.toLowerCase() && p.id !== selectedProduct.id)) {
+      alert(`Ya existe otro producto llamado "${newName}".`);
       return;
     }
 
-    const updatedProducts = products.map(p => {
-      if (p.id === selectedProduct.id) {
-        return {
-          ...p,
-          name: normalizedNewName,
-          category: editFormData.category,
-          price: parseFloat(editFormData.price)
-        };
-      }
-      return p;
-    });
-
-    if (oldName !== normalizedNewName) {
-      setStockHistory(prev => (prev || []).map(h => 
-        h.productName.toLowerCase() === oldName.toLowerCase() ? { ...h, productName: normalizedNewName } : h
+    if (oldName !== newName) {
+      setStockHistory(prev => (prev || []).map(h =>
+        h.productName.toLowerCase() === oldName.toLowerCase() ? { ...h, productName: newName } : h
       ));
-
-      setToBuy(prev => (prev || []).map(item => 
-        (item.productId === selectedProduct.id || item.productName.toLowerCase() === oldName.toLowerCase()) 
-          ? { ...item, productName: normalizedNewName } : item
+      setToBuy(prev => (prev || []).map(i =>
+        (i.productId === selectedProduct.id || i.productName.toLowerCase() === oldName.toLowerCase())
+          ? { ...i, productName: newName } : i
       ));
-
-      setToBuyHistory(prev => (prev || []).map(item => 
-        (item.productId === selectedProduct.id || item.productName.toLowerCase() === oldName.toLowerCase()) 
-          ? { ...item, productName: normalizedNewName } : item
+      setToBuyHistory(prev => (prev || []).map(i =>
+        (i.productId === selectedProduct.id || i.productName.toLowerCase() === oldName.toLowerCase())
+          ? { ...i, productName: newName } : i
       ));
-
-      setOrders(prev => (prev || []).map(order => 
-        (order.productId === selectedProduct.id || (order.productName && order.productName.toLowerCase() === oldName.toLowerCase()))
-          ? { ...order, productName: normalizedNewName } 
-          : order
+      setOrders(prev => (prev || []).map(o =>
+        (o.productId === selectedProduct.id || o.productName?.toLowerCase() === oldName.toLowerCase())
+          ? { ...o, productName: newName } : o
       ));
     }
 
-    setProducts(updatedProducts);
+    setProducts(products.map(p => p.id === selectedProduct.id
+      ? { ...p, name: newName, category: editFormData.category, price: parseFloat(editFormData.price) }
+      : p
+    ));
     setEditModalOpen(false);
     setSelectedProduct(null);
   };
 
   const handleCleanupHistory = () => {
-    if (window.confirm('¿Deseas eliminar del historial todos los registros de productos que ya no existen en el inventario?')) {
-      const activeProductNames = products.map(p => p.name);
-      setStockHistory(prev => (prev || []).filter(h => activeProductNames.includes(h.productName)));
-      alert('Historial depurado con éxito.');
+    if (window.confirm('¿Eliminar registros de productos que ya no existen?')) {
+      const active = products.map(p => p.name);
+      setStockHistory(prev => (prev || []).filter(h => active.includes(h.productName)));
     }
   };
 
+  /* ── Categorías comunes ── */
+  const CATEGORIES = ['Sublimación', 'Textil', 'Papelería', 'Vinilo', 'Tazas', 'Suéteres', 'Gorras', 'Termos', 'Otros'];
+
   return (
     <>
+      {/* ══════════════ MODAL: AÑADIR PRODUCTO ══════════════ */}
+      {addModalOpen && (
+        <div className="modal-overlay animate-fade-in" onClick={() => setAddModalOpen(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '480px', maxWidth: '95vw', padding: '28px' }}>
+            <ModalHeader icon={Plus} title="Registrar Nuevo Producto" subtitle="Completa los datos del producto" onClose={() => setAddModalOpen(false)} />
+            <form onSubmit={handleAddProduct}>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Package size={14} /> Nombre del Producto</label>
+                <input style={MODAL_INPUT} type="text" required autoFocus placeholder="Ej: Taza Blanca 11oz"
+                  value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Tag size={14} /> Categoría</label>
+                <select style={MODAL_INPUT} value={formData.category}
+                  onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Hash size={14} /> Stock Inicial (unidades)</label>
+                <input style={MODAL_INPUT} type="number" required placeholder="0" min="0"
+                  value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Precio Unitario ($)</label>
+                <input style={MODAL_INPUT} type="number" step="0.01" required placeholder="0.00" min="0"
+                  value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
+              </div>
+              <button type="submit" style={MODAL_BTN_SUCCESS}>Guardar en Inventario</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════ MODAL: HISTORIAL GLOBAL ══════════════ */}
       {historyModalOpen && (
         <div className="modal-overlay animate-fade-in" onClick={() => setHistoryModalOpen(false)}>
-          <div
-            className="modal-content glass"
-            onClick={e => e.stopPropagation()}
-            style={{ width: '700px', maxWidth: '94vw', padding: '28px' }}
-          >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '700px', maxWidth: '95vw', padding: '28px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display:'flex' }}>
+                <div style={{ background: 'rgba(14,165,233,0.12)', borderRadius: '12px', padding: '10px', display: 'flex' }}>
                   <Clock size={22} style={{ color: 'var(--primary)' }} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Historial Global de Movimientos</h3>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Historial Global de Movimientos</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     {stockHistory?.length || 0} registro{(stockHistory?.length || 0) !== 1 ? 's' : ''} en total
                   </p>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                {stockHistory && stockHistory.length > 0 && (
-                  <button
-                    onClick={handleCleanupHistory}
-                    style={{
-                      background: 'rgba(239,68,68,0.08)',
-                      color: 'var(--danger)',
-                      border: '1px solid rgba(239,68,68,0.2)',
-                      padding: '6px 14px',
-                      borderRadius: '10px',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    Depurar
-                  </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {stockHistory?.length > 0 && (
+                  <button onClick={handleCleanupHistory} style={{
+                    background: 'rgba(239,68,68,0.08)', color: 'var(--danger)',
+                    border: '1px solid rgba(239,68,68,0.2)', padding: '6px 14px',
+                    borderRadius: '10px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'
+                  }}>Depurar</button>
                 )}
-                <button
-                  onClick={() => setHistoryModalOpen(false)}
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <X size={18} />
-                </button>
+                <button onClick={() => setHistoryModalOpen(false)} style={{
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                  color: 'var(--text)', cursor: 'pointer', borderRadius: '10px',
+                  width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}><X size={18} /></button>
               </div>
             </div>
 
-            {/* Body */}
             <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {(!stockHistory || stockHistory.length === 0) ? (
                 <div style={{ padding: '48px 0', textAlign: 'center', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                   <Package size={36} />
-                  <p style={{ margin: 0 }}>Aún no hay movimientos de inventario registrados.</p>
+                  <p style={{ margin: 0 }}>Aún no hay movimientos registrados.</p>
                 </div>
-              ) : (
-                stockHistory.map(record => {
-                  const isEntrada = record.type === 'Entrada';
-                  return (
-                    <div
-                      key={record.id}
-                      style={{
-                        padding: '16px 20px',
-                        borderRadius: '14px',
-                        background: isEntrada ? 'rgba(16,185,129,0.05)' : 'rgba(14,165,233,0.05)',
-                        border: `1px solid ${isEntrada ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)'}`,
-                        borderLeft: `4px solid ${isEntrada ? '#10b981' : '#0ea5e9'}`,
-                      }}
-                    >
-                      {/* Row 1: Type badge + Date */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <span style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase',
-                          padding: '3px 10px',
-                          borderRadius: '20px',
-                          background: isEntrada ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)',
-                          color: isEntrada ? '#10b981' : '#0ea5e9'
-                        }}>
-                          {isEntrada ? '▲ Entrada' : '▼ Salida'}
-                        </span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          {new Date(record.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          {' · '}
-                          {new Date(record.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-
-                      {/* Row 2: Product + Quantity */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                        <div>
-                          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{record.productName}</p>
-                          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                            {isEntrada ? record.customer || 'Reposición' : `Pedido: ${record.customer}`}
-                            {record.orderId && record.orderId !== 'N/A' && (
-                              <span style={{ marginLeft: '10px', opacity: 0.7 }}># {record.orderId}</span>
-                            )}
-                          </p>
-                        </div>
-                        <span style={{
-                          fontSize: '1.1rem',
-                          fontWeight: 800,
-                          color: isEntrada ? '#10b981' : '#0ea5e9',
-                          whiteSpace: 'nowrap',
-                          paddingLeft: '16px'
-                        }}>
-                          {isEntrada ? '+' : '-'}{record.quantity} unds
-                        </span>
-                      </div>
+              ) : stockHistory.map(record => {
+                const isEntrada = record.type === 'Entrada';
+                return (
+                  <div key={record.id} style={{
+                    padding: '16px 20px', borderRadius: '14px',
+                    background: isEntrada ? 'rgba(16,185,129,0.05)' : 'rgba(14,165,233,0.05)',
+                    border: `1px solid ${isEntrada ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)'}`,
+                    borderLeft: `4px solid ${isEntrada ? '#10b981' : '#0ea5e9'}`
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{
+                        fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+                        padding: '3px 10px', borderRadius: '20px',
+                        background: isEntrada ? 'rgba(16,185,129,0.15)' : 'rgba(14,165,233,0.15)',
+                        color: isEntrada ? '#10b981' : '#0ea5e9'
+                      }}>{isEntrada ? '▲ Entrada' : '▼ Salida'}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {new Date(record.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {' · '}
+                        {new Date(record.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                  );
-                })
-              )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      <div>
+                        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{record.productName}</p>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          {isEntrada ? record.customer || 'Reposición' : `Pedido: ${record.customer}`}
+                          {record.orderId && record.orderId !== 'N/A' && (
+                            <span style={{ marginLeft: '10px', opacity: 0.7 }}># {record.orderId}</span>
+                          )}
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: isEntrada ? '#10b981' : '#0ea5e9', whiteSpace: 'nowrap', paddingLeft: '16px' }}>
+                        {isEntrada ? '+' : '-'}{record.quantity} unds
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-
+      {/* ══════════════ MODAL: AGREGAR STOCK ══════════════ */}
       {stockModalOpen && (
         <div className="modal-overlay animate-fade-in" onClick={() => setStockModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '400px' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Agregar Stock</h3>
-              <button className="close-btn" onClick={() => setStockModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p style={{ marginBottom: '20px', fontSize: '0.9rem', opacity: 0.8 }}>
-                Ingresa la cantidad de <strong>{selectedProduct?.name}</strong> que ha llegado al inventario.
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '440px', maxWidth: '95vw', padding: '28px' }}>
+            <ModalHeader icon={PlusCircle} title="Agregar Stock" subtitle={`Producto: ${selectedProduct?.name}`} onClose={() => setStockModalOpen(false)} />
+            <form onSubmit={handleUpdateStock}>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Hash size={14} /> Cantidad a sumar</label>
+                <input style={MODAL_INPUT} type="number" required autoFocus placeholder="0" min="1"
+                  value={stockToAdd} onChange={e => setStockToAdd(e.target.value)} />
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 16px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                Stock actual: <strong style={{ color: 'var(--text)' }}>{selectedProduct?.stock || 0} unds</strong>
+                &nbsp;→&nbsp;
+                <strong style={{ color: '#10b981' }}>{(selectedProduct?.stock || 0) + (parseInt(stockToAdd) || 0)} unds</strong>
               </p>
-              <form onSubmit={handleUpdateStock}>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label><Hash size={14} /> Cantidad a sumar</label>
-                  <input 
-                    type="number" 
-                    required 
-                    autoFocus
-                    placeholder="0" 
-                    value={stockToAdd}
-                    onChange={(e) => setStockToAdd(e.target.value)}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Confirmar Entrada
-                </button>
-              </form>
-            </div>
+              <button type="submit" style={MODAL_BTN_SUCCESS}>Confirmar Entrada</button>
+            </form>
           </div>
         </div>
       )}
 
+      {/* ══════════════ MODAL: EDITAR PRODUCTO ══════════════ */}
       {editModalOpen && (
         <div className="modal-overlay animate-fade-in" onClick={() => setEditModalOpen(false)}>
-          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '450px' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Editar Producto</h3>
-              <button className="close-btn" onClick={() => setEditModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={handleEditProduct} className="inventory-form">
-                <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label><Package size={14} /> Nombre del Producto</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editFormData.name}
-                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: '15px' }}>
-                  <label><Filter size={14} /> Categoría</label>
-                  <select 
-                    value={editFormData.category}
-                    onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  >
-                    <option value="Tazas">Tazas</option>
-                    <option value="Suéteres">Suéteres</option>
-                    <option value="Gorras">Gorras</option>
-                    <option value="Termos">Termos</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                </div>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                  <label><Banknote size={14} /> Precio Unitario ($)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    required 
-                    value={editFormData.price}
-                    onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-                <button type="submit" className="submit-inv-btn" style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'var(--primary)', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Guardar Cambios
-                </button>
-              </form>
-            </div>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ width: '480px', maxWidth: '95vw', padding: '28px' }}>
+            <ModalHeader icon={Edit} title="Editar Producto" subtitle="Modifica nombre, categoría o precio" onClose={() => setEditModalOpen(false)} />
+            <form onSubmit={handleEditProduct}>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Package size={14} /> Nombre del Producto</label>
+                <input style={MODAL_INPUT} type="text" required
+                  value={editFormData.name} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Tag size={14} /> Categoría</label>
+                <select style={MODAL_INPUT} value={editFormData.category}
+                  onChange={e => setEditFormData({ ...editFormData, category: e.target.value })}>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div style={MODAL_GROUP}>
+                <label style={MODAL_LABEL}><Banknote size={14} /> Precio Unitario ($)</label>
+                <input style={MODAL_INPUT} type="number" step="0.01" required placeholder="0.00" min="0"
+                  value={editFormData.price} onChange={e => setEditFormData({ ...editFormData, price: e.target.value })} />
+              </div>
+              <button type="submit" style={MODAL_BTN_PRIMARY}>Guardar Cambios</button>
+            </form>
           </div>
         </div>
       )}
 
+      {/* ══════════════ PÁGINA PRINCIPAL ══════════════ */}
       <div className="inventory animate-fade-in">
         <div className="page-header">
           <div className="header-title-area">
-            <button className="back-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
-            </button>
+            <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
             <div>
               <h2>Inventario</h2>
               <p>Gestión de stock de Apolo Sublix</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="add-btn" onClick={() => setHistoryModalOpen(true)} style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}>
-              <Clock size={20} />
-              <span>Historial Global</span>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button className="add-btn" onClick={() => setHistoryModalOpen(true)}
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}>
+              <Clock size={20} /><span>Historial Global</span>
             </button>
-            <button className="add-btn" onClick={() => {
-              const nextShow = !showForm;
-              setShowForm(nextShow);
-              if (nextShow) window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}>
-              {showForm ? <X size={20} /> : <Plus size={20} />}
-              <span>{showForm ? 'Cancelar' : 'Añadir Producto'}</span>
+            <button className="add-btn" onClick={() => setAddModalOpen(true)}>
+              <Plus size={20} /><span>Añadir Producto</span>
             </button>
           </div>
         </div>
-
-        {showForm && (
-          <div className="inventory-form-card glass animate-fade-in">
-            <h3>Registrar Nuevo Producto</h3>
-            <form onSubmit={handleAddProduct} className="inventory-form">
-              <div className="form-group">
-                <label><Package size={14} /> Nombre del Producto</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Taza Blanca 11oz"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label><Tag size={14} /> Categoría</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="Sublimación">Sublimación</option>
-                  <option value="Textil">Textil</option>
-                  <option value="Papelería">Papelería</option>
-                  <option value="Vinilo">Vinilo</option>
-                  <option value="Otros">Otros</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label><Hash size={14} /> Stock Inicial</label>
-                <input
-                  type="number"
-                  required
-                  placeholder="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label><Banknote size={14} /> Precio Unitario ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="0.00"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="submit-inv-btn">
-                Guardar en Inventario
-              </button>
-            </form>
-          </div>
-        )}
 
         <div className="table-controls glass">
           <div className="search-bar">
@@ -535,8 +405,7 @@ const Inventory = () => {
             <input type="text" placeholder="Buscar productos..." />
           </div>
           <button className="filter-btn">
-            <Filter size={18} />
-            <span>Filtros</span>
+            <Filter size={18} /><span>Filtros</span>
           </button>
         </div>
 
@@ -555,15 +424,11 @@ const Inventory = () => {
             </thead>
             <tbody>
               {(products || []).length === 0 ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
-                    No se encontraron productos.
-                  </td>
-                </tr>
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>No se encontraron productos.</td></tr>
               ) : (
                 [...products]
                   .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((p) => (
+                  .map(p => (
                     <tr key={p.id} className={p.stock === 0 ? 'out-of-stock-row' : ''}>
                       <td className="product-name">
                         <div className="name-with-alert">
@@ -572,12 +437,8 @@ const Inventory = () => {
                         </div>
                       </td>
                       <td>{p.category}</td>
-                      <td className={p.stock === 0 ? 'text-danger font-bold' : ''}>
-                        {p.stock} unds
-                      </td>
-                      <td style={{ color: (p.reserved || 0) > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>
-                        {p.reserved || 0} unds
-                      </td>
+                      <td className={p.stock === 0 ? 'text-danger font-bold' : ''}>{p.stock} unds</td>
+                      <td style={{ color: (p.reserved || 0) > 0 ? 'var(--warning)' : 'var(--text-muted)' }}>{p.reserved || 0} unds</td>
                       <td>${typeof p.price === 'number' ? formatUSD(p.price) : p.price}</td>
                       <td>
                         <span className={`status-badge ${p.status?.toLowerCase().replace(' ', '-') || 'sin-status'}`}>
@@ -586,33 +447,20 @@ const Inventory = () => {
                       </td>
                       <td>
                         <div className="inv-actions">
-                          <button 
-                            className="inv-edit-btn" 
-                            onClick={() => {
-                              setSelectedProduct(p);
-                              setEditFormData({
-                                name: p.name,
-                                category: p.category,
-                                price: p.price
-                              });
-                              setEditModalOpen(true);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }} 
-                            title="Editar Producto"
-                          >
+                          <button className="inv-edit-btn" title="Editar Producto" onClick={() => {
+                            setSelectedProduct(p);
+                            setEditFormData({ name: p.name, category: p.category, price: p.price });
+                            setEditModalOpen(true);
+                          }}>
                             <Edit size={18} />
                           </button>
-                          <button 
-                            className="inv-add-stock-btn" 
-                            onClick={() => {
-                              setSelectedProduct(p);
-                              setStockModalOpen(true);
-                            }} 
-                            title="Agregar Stock"
-                          >
+                          <button className="inv-add-stock-btn" title="Agregar Stock" onClick={() => {
+                            setSelectedProduct(p);
+                            setStockModalOpen(true);
+                          }}>
                             <PlusCircle size={18} />
                           </button>
-                          <button className="inv-delete-btn" onClick={() => handleDeleteProduct(p.id)} title="Eliminar">
+                          <button className="inv-delete-btn" title="Eliminar" onClick={() => handleDeleteProduct(p.id)}>
                             <Trash2 size={18} />
                           </button>
                         </div>
