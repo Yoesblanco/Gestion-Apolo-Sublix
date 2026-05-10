@@ -88,11 +88,17 @@ export const AppProvider = ({ children }) => {
         const localData = loadFromStorage();
         const localLastUpdated = localData.lastUpdated || 0;
 
-        // Si el servidor tiene datos, los cargamos SIEMPRE que no sean sospechosamente más viejos
-        // O si lo local está vacío (primer inicio)
-        const localIsEmpty = orders.length === 0 && customers.length === 0;
+        // --- LÓGICA DE RECUPERACIÓN INTELIGENTE ---
+        const serverIsEmpty = (!data.orders || data.orders.length === 0) && (!data.customers || data.customers.length === 0);
+        const localIsEmpty = localData.orders.length === 0 && localData.customers.length === 0;
 
-        if (serverLastUpdated > localLastUpdated || localIsEmpty) {
+        if (serverIsEmpty && !localIsEmpty) {
+          // CASO ESPECIAL: El servidor está vacío pero nosotros tenemos datos.
+          // Mantenemos lo local para que el efecto de sync lo suba y recupere la DB.
+          console.log('Detectada base de datos vacía. Iniciando modo recuperación desde datos locales...');
+          addToast('Recuperando datos desde este dispositivo...', 'info');
+        } else if (serverLastUpdated > localLastUpdated || localIsEmpty) {
+          // CASO NORMAL: El servidor tiene datos más nuevos o nosotros no tenemos nada.
           console.log('Sincronizando desde servidor...');
           if (Array.isArray(data.transactions)) setTransactions(data.transactions);
           if (Array.isArray(data.orders)) setOrders(data.orders);
@@ -104,7 +110,7 @@ export const AppProvider = ({ children }) => {
         } else {
           console.log('Los datos locales ya están actualizados.');
         }
-        // Si llegamos aquí, la comunicación con el servidor fue exitosa
+        
         setDataLoadedCorrectly(true);
       } catch (err) {
         console.warn('Usando datos locales: No se pudo contactar con el servidor.');
