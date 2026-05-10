@@ -87,9 +87,12 @@ export const AppProvider = ({ children }) => {
         const localData = loadFromStorage();
         const localLastUpdated = localData.lastUpdated || 0;
 
-        // Last Write Wins (LWW): Si el servidor tiene datos más recientes, sobrescribimos lo local.
-        if (serverLastUpdated > localLastUpdated) {
-          console.log('Datos del servidor son más recientes. Actualizando estado local...');
+        // Si el servidor tiene datos, los cargamos SIEMPRE que no sean sospechosamente más viejos
+        // O si lo local está vacío (primer inicio)
+        const localIsEmpty = orders.length === 0 && customers.length === 0;
+
+        if (serverLastUpdated > localLastUpdated || localIsEmpty) {
+          console.log('Sincronizando desde servidor...');
           if (Array.isArray(data.transactions)) setTransactions(data.transactions);
           if (Array.isArray(data.orders)) setOrders(data.orders);
           if (Array.isArray(data.customers)) setCustomers(data.customers);
@@ -98,11 +101,12 @@ export const AppProvider = ({ children }) => {
           if (Array.isArray(data.toBuyHistory)) setToBuyHistory(data.toBuyHistory);
           if (Array.isArray(data.stockHistory)) setStockHistory(data.stockHistory);
         } else {
-          console.log('Datos locales están actualizados o son más recientes.');
+          console.log('Los datos locales ya están actualizados.');
         }
       } catch (err) {
         console.warn('Usando datos locales: No se pudo contactar con el servidor.');
       } finally {
+        // Importante: No marcamos como inicializado hasta que hayamos intentado cargar todo
         setIsInitialized(true);
       }
     };

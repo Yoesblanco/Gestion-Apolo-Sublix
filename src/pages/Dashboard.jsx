@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { formatUSD } from '../utils/formatters';
-import { 
-  Package, 
-  Users, 
+import {
+  Package,
+  Users,
   Wallet,
   ShoppingBag,
   Plus,
@@ -47,7 +47,7 @@ const Dashboard = () => {
 
   const chartData = useMemo(() => {
     const dataMap = {};
-    
+
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -61,7 +61,7 @@ const Dashboard = () => {
       if (!t?.date) return;
       try {
         let dateStr = "";
-        
+
         if (typeof t.date === 'string') {
           if (t.date.includes('T')) {
             dateStr = t.date.split('T')[0];
@@ -114,9 +114,9 @@ const Dashboard = () => {
 
       <div className="stats-grid">
         {stats.map((stat, i) => (
-          <div 
-            key={i} 
-            className="stat-card glass clickable-card" 
+          <div
+            key={i}
+            className="stat-card glass clickable-card"
             onClick={() => navigate(stat.path)}
           >
             <div className="stat-icon" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
@@ -208,7 +208,7 @@ const Dashboard = () => {
               Ver todos
             </button>
           </div>
-          
+
           <div className="compact-orders-list">
             {upcomingOrders.length === 0 ? (
               <div className="empty-msg">Sin entregas pendientes</div>

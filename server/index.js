@@ -189,44 +189,43 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/data/sync', async (req, res) => {
   try {
     const data = req.body;
-    // --- PRODUCTOS (Sincronización Total) ---
-    if (data.products) {
-      await supabase.from('products').delete().neq('id', 0);
+    // --- PRODUCTOS (Sincronización Inteligente) ---
+    if (data.products && Array.isArray(data.products)) {
       if (data.products.length > 0) {
-        await supabase.from('products').insert(data.products);
+        const pIds = data.products.map(p => p.id);
+        // Borramos solo los que no están en la lista nueva
+        await supabase.from('products').delete().not('id', 'in', pIds);
+        await supabase.from('products').upsert(data.products);
       }
+      // Si la lista está vacía, NO borramos nada por seguridad (evita wipes accidentales)
     }
     
-    // --- CLIENTES (Sincronización Total) ---
-    if (data.customers) {
-      await supabase.from('customers').delete().neq('id', 0);
+    // --- CLIENTES (Sincronización Inteligente) ---
+    if (data.customers && Array.isArray(data.customers)) {
       if (data.customers.length > 0) {
-        await supabase.from('customers').insert(data.customers);
+        const cIds = data.customers.map(c => c.id);
+        await supabase.from('customers').delete().not('id', 'in', cIds);
+        await supabase.from('customers').upsert(data.customers);
       }
     }
 
-    // --- TRANACCIONES (Sincronización Total) ---
-    if (data.transactions) {
-      // 1. Borramos todo lo actual para que coincida exactamente con el frontend
-      await supabase.from('transactions').delete().neq('id', 'placeholder_para_borrar_todo');
-      
+    // --- TRANSACCIONES (Sincronización Inteligente) ---
+    if (data.transactions && Array.isArray(data.transactions)) {
       if (data.transactions.length > 0) {
         const txs = data.transactions.map(t => ({
           id: t.id, date: t.date, amount: t.amount, type: t.type,
           category: t.category, method: t.method, description: t.description, order_id: t.orderId
         }));
-        // 2. Insertamos el estado actual
-        await supabase.from('transactions').insert(txs);
+        const tIds = txs.map(t => t.id);
+        await supabase.from('transactions').delete().not('id', 'in', tIds);
+        await supabase.from('transactions').upsert(txs);
       }
     }
 
-    // --- PEDIDOS Y PAGOS (Sincronización Total) ---
-    if (data.orders) {
-      // Por integridad, borramos primero los pagos (que dependen de los pedidos)
-      await supabase.from('payments').delete().neq('id', 0);
-      await supabase.from('orders').delete().neq('id', 'placeholder');
-      
+    // --- PEDIDOS Y PAGOS (Sincronización Inteligente) ---
+    if (data.orders && Array.isArray(data.orders)) {
       if (data.orders.length > 0) {
+        const oIds = data.orders.map(o => o.id);
         const payments = [];
         const orders = data.orders.map(o => {
           const { payments: orderPayments, ...orderData } = o;
@@ -258,50 +257,51 @@ app.post('/api/data/sync', async (req, res) => {
           };
         });
 
-        await supabase.from('orders').insert(orders);
+        // Para pagos es más complejo, pero podemos borrar los que ya no existen para estos pedidos
+        const pIds = payments.map(p => p.id);
+        if (pIds.length > 0) {
+          await supabase.from('payments').delete().not('id', 'in', pIds).in('order_id', oIds);
+        }
+
+        await supabase.from('orders').delete().not('id', 'in', oIds);
+        await supabase.from('orders').upsert(orders);
         if (payments.length > 0) {
-          await supabase.from('payments').insert(payments);
+          await supabase.from('payments').upsert(payments);
         }
       }
     }
 
-    if (data.stockHistory) {
+    if (data.stockHistory && Array.isArray(data.stockHistory) && data.stockHistory.length > 0) {
       const shIds = data.stockHistory.map(s => s.id);
       await supabase.from('stock_history').delete().not('id', 'in', shIds);
-      if (data.stockHistory.length > 0) {
-        const sh = data.stockHistory.map(s => ({
-          id: s.id, date: s.date, type: s.type, product_name: s.productName,
-          customer: s.customer, quantity: s.quantity, order_id: s.orderId, notes: s.notes
-        }));
-        await supabase.from('stock_history').upsert(sh);
-      }
+      const sh = data.stockHistory.map(s => ({
+        id: s.id, date: s.date, type: s.type, product_name: s.productName,
+        customer: s.customer, quantity: s.quantity, order_id: s.orderId, notes: s.notes
+      }));
+      await supabase.from('stock_history').upsert(sh);
     }
 
-    if (data.toBuy) {
+    if (data.toBuy && Array.isArray(data.toBuy) && data.toBuy.length > 0) {
       const tbIds = data.toBuy.map(b => b.id);
       await supabase.from('to_buy').delete().not('id', 'in', tbIds);
-      if (data.toBuy.length > 0) {
-        const tb = data.toBuy.map(b => ({
-          id: b.id, product_name: b.productName, quantity: b.quantity, notes: b.notes,
-          order_description: b.orderDescription, status: b.status, date_added: b.dateAdded,
-          order_id: b.orderId, customer: b.customer, product_id: b.productId
-        }));
-        await supabase.from('to_buy').upsert(tb);
-      }
+      const tb = data.toBuy.map(b => ({
+        id: b.id, product_name: b.productName, quantity: b.quantity, notes: b.notes,
+        order_description: b.orderDescription, status: b.status, date_added: b.dateAdded,
+        order_id: b.orderId, customer: b.customer, product_id: b.productId
+      }));
+      await supabase.from('to_buy').upsert(tb);
     }
 
-    if (data.toBuyHistory) {
+    if (data.toBuyHistory && Array.isArray(data.toBuyHistory) && data.toBuyHistory.length > 0) {
       const tbhIds = data.toBuyHistory.map(h => h.id);
       await supabase.from('to_buy_history').delete().not('id', 'in', tbhIds);
-      if (data.toBuyHistory.length > 0) {
-        const tbh = data.toBuyHistory.map(h => ({
-          id: h.id, product_name: h.productName, quantity: h.quantity, notes: h.notes,
-          order_description: h.orderDescription, status: h.status, date_added: h.dateAdded,
-          order_id: h.order_id, customer: h.customer, date_bought: h.dateBought,
-          purchase_price: h.purchasePrice, product_id: h.productId, transaction_id: h.transactionId
-        }));
-        await supabase.from('to_buy_history').upsert(tbh);
-      }
+      const tbh = data.toBuyHistory.map(h => ({
+        id: h.id, product_name: h.productName, quantity: h.quantity, notes: h.notes,
+        order_description: h.orderDescription, status: h.status, date_added: h.dateAdded,
+        order_id: h.order_id, customer: h.customer, date_bought: h.dateBought,
+        purchase_price: h.purchasePrice, product_id: h.productId, transaction_id: h.transactionId
+      }));
+      await supabase.from('to_buy_history').upsert(tbh);
     }
 
     serverLastUpdated = data.timestamp || Date.now();
