@@ -80,7 +80,9 @@
   gap: 0.75rem;
 }
 
-.inv-delete-btn, .inv-add-stock-btn, .inv-edit-btn {
+.inv-delete-btn,
+.inv-add-stock-btn,
+.inv-edit-btn {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
@@ -190,20 +192,20 @@
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .header-title-area {
     width: 100%;
   }
-  
+
   .add-btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .table-controls {
     flex-direction: column;
   }
-  
+
   .inventory-form {
     grid-template-columns: 1fr;
   }
@@ -213,6 +215,34 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+}
+
+@media (max-width: 600px) {
+  .inventory-table th, 
+  .inventory-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .inventory-table {
+    min-width: 900px;
+  }
+
+  .table-container::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .table-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+  }
+  
+  .table-container::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+    box-shadow: 0 0 10px var(--primary);
+  }
 }
 
 .inventory-table th {
@@ -286,13 +316,29 @@
 }
 
 @keyframes pulse-red {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.text-danger { color: var(--danger); }
-.font-bold { font-weight: 700; }
+.text-danger {
+  color: var(--danger);
+}
+
+.font-bold {
+  font-weight: 700;
+}
 
 .action-btn {
   background: transparent;
