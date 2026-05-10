@@ -655,4 +655,81 @@
   font-size: 0.9rem;
   font-style: italic;
   margin: auto;
-}
+}
+
+/* Chart Data Table */
+.chart-data-table {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 1rem;
+}
+
+.chart-table-header {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.chart-table-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.chart-table-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chart-table-row.has-activity {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.chart-table-row.no-activity {
+  opacity: 0.4;
+}
+
+.col-date {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.col-ingreso {
+  color: #10b981;
+  font-weight: 700;
+  text-align: right;
+}
+
+.col-egreso {
+  color: #f43f5e;
+  font-weight: 700;
+  text-align: right;
+}
+
+.col-balance {
+  font-weight: 800;
+  text-align: right;
+}
+
+.col-balance.positive {
+  color: #10b981;
+}
+
+.col-balance.negative {
+  color: #f43f5e;
+}
+
+.chart-table-header span:not(:first-child) {
+  text-align: right;
+}
+

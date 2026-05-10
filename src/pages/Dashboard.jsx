@@ -143,35 +143,63 @@ const Dashboard = () => {
               <span className="legend-item egresos">Egresos</span>
             </div>
           </div>
-          
-          <div className="main-chart-container">
-            {!hasData ? (
-              <div className="no-data-msg">No hay actividad financiera registrada esta semana</div>
-            ) : (
-              <div className="evolution-bars">
-                {chartData.map((d, i) => (
-                  <div key={i} className="evolution-column">
-                    <div className="evolution-bar-group">
-                      <div 
-                        className="evo-bar income" 
-                        style={{ height: `${(d.ingresos / maxVal) * 100}%` }}
-                      >
-                        <div className="evo-tooltip">${formatUSD(d.ingresos)}</div>
+
+          {!hasData ? (
+            <div className="no-data-msg">No hay actividad financiera registrada esta semana</div>
+          ) : (
+            <>
+              {/* Barras */}
+              <div className="main-chart-container">
+                <div className="evolution-bars">
+                  {chartData.map((d, i) => (
+                    <div key={i} className="evolution-column">
+                      <div className="evolution-bar-group">
+                        <div
+                          className="evo-bar income"
+                          style={{ height: `${(d.ingresos / maxVal) * 100}%` }}
+                        />
+                        <div
+                          className="evo-bar expense"
+                          style={{ height: `${(d.egresos / maxVal) * 100}%` }}
+                        />
                       </div>
-                      <div 
-                        className="evo-bar expense" 
-                        style={{ height: `${(d.egresos / maxVal) * 100}%` }}
-                      >
-                        <div className="evo-tooltip">${formatUSD(d.egresos)}</div>
-                      </div>
+                      <span className="evo-label">{d.day}</span>
                     </div>
-                    <span className="evo-label">{d.day}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
+
+              {/* Tabla de datos debajo de las barras */}
+              <div className="chart-data-table">
+                <div className="chart-table-header">
+                  <span>Fecha</span>
+                  <span className="col-ingreso">Ingreso</span>
+                  <span className="col-egreso">Egreso</span>
+                  <span className="col-balance">Balance</span>
+                </div>
+                {chartData.map((d, i) => {
+                  const balance = d.ingresos - d.egresos;
+                  const hasActivity = d.ingresos > 0 || d.egresos > 0;
+                  return (
+                    <div key={i} className={`chart-table-row ${hasActivity ? 'has-activity' : 'no-activity'}`}>
+                      <span className="col-date">{d.date}</span>
+                      <span className="col-ingreso">
+                        {d.ingresos > 0 ? `+$${formatUSD(d.ingresos)}` : '—'}
+                      </span>
+                      <span className="col-egreso">
+                        {d.egresos > 0 ? `-$${formatUSD(d.egresos)}` : '—'}
+                      </span>
+                      <span className={`col-balance ${balance >= 0 ? 'positive' : 'negative'}`}>
+                        {hasActivity ? `${balance >= 0 ? '+' : ''}$${formatUSD(Math.abs(balance))}` : '—'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
+
 
         <div className="dashboard-card glass upcoming-orders-compact">
           <div className="card-header">
