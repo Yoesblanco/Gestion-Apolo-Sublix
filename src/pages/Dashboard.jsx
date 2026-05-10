@@ -69,7 +69,7 @@ const Dashboard = () => {
             dateStr = t.date.split('T')[0];
           } else {
             // Intentamos parsear formatos como DD/MM/YYYY o YYYY-MM-DD
-            const parts = t.date.split(/[\/\-,\s]+/);
+            const parts = t.date.split(/[\/- \s]+/);
             if (parts.length >= 3) {
               // Asumimos YYYY-MM-DD si la primera parte es de 4 dígitos, si no DD/MM/YYYY
               if (parts[0].length === 4) dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
@@ -85,7 +85,7 @@ const Dashboard = () => {
           if (t.type?.toLowerCase() === 'ingreso') dataMap[dateStr].ingresos += amt;
           else if (t.type?.toLowerCase() === 'egreso') dataMap[dateStr].egresos += amt;
         }
-      } catch (e) { /* Ignorar fallos de parseo en registros corruptos */ }
+      } catch (err) { /* Ignorar fallos de parseo en registros corruptos */ }
     });
 
     // 4. Convertir mapa a arreglo para la gráfica

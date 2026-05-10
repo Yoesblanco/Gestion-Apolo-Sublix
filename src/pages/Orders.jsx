@@ -8,7 +8,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ChevronRight,
   Plus,
   X,
   Calendar,
@@ -23,7 +22,6 @@ import {
   Mail,
   AlertTriangle,
   Edit2,
-  Maximize2,
   CreditCard
 } from 'lucide-react';
 import './Orders.css';
@@ -99,7 +97,7 @@ const Orders = () => {
       try {
         // Extraemos solo la parte YYYY-MM-DD
         return new Date(dateStr).toISOString().split('T')[0];
-      } catch (e) {
+      } catch (err) {
         return '';
       }
     };
@@ -430,7 +428,7 @@ const Orders = () => {
 
       // 3. REGISTRAR VENTA TOTAL EN EL ÁREA DE VENTAS (Solo al finalizar)
       if (order) {
-        const finalSaleTransaction = {
+        setTransactions(prev => [{
           id: `TX-FINAL-${Date.now()}`,
           date: new Date().toISOString(),
           amount: order.total, // Sumamos el TOTAL del pedido de una vez
@@ -438,8 +436,7 @@ const Orders = () => {
           category: 'Venta/Pedido',
           description: `Venta finalizada pedido ${order.id} - ${order.customer}`,
           orderId: order.id
-        };
-        setTransactions(prev => [finalSaleTransaction, ...prev]);
+        }, ...prev]);
 
         // Actualizar el pedido para marcarlo como pagado totalmente (por si faltaba algo)
         setOrders(orders.map(o => {
