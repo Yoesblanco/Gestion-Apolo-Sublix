@@ -9,7 +9,9 @@ import {
   ShoppingBag,
   Plus,
   Clock,
-  Calendar
+  Calendar,
+  ArrowUpRight,
+  ArrowRight
 } from 'lucide-react';
 import './Dashboard.css';
 import { useNavigate } from 'react-router-dom';
@@ -38,7 +40,7 @@ const Dashboard = () => {
     return (orders || [])
       .filter(o => o && (o.status || 'Pendiente') !== 'Entregado')
       .sort((a, b) => new Date(a?.deliveryDate || 0) - new Date(b?.deliveryDate || 0))
-      .slice(0, 3);
+      .slice(0, 5);
   }, [orders]);
 
 
@@ -83,7 +85,8 @@ const Dashboard = () => {
     });
 
     return days.map(d => ({
-      day: d.dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }),
+      day: d.dateObj.toLocaleDateString('es-ES', { weekday: 'short' }),
+      date: d.dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
       ingresos: dataMap[d.key].ingresos,
       egresos: dataMap[d.key].egresos
     }));
@@ -98,7 +101,6 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard animate-fade-in">
-      {/* Welcome Header */}
       <div className="welcome-header">
         <div className="welcome-text">
           <span className="dashboard-date-badge">
@@ -107,12 +109,6 @@ const Dashboard = () => {
           </span>
           <h1>{contextLabel}</h1>
           <p>Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Centro de mando de {user?.businessName || 'Apolo Sublix'}.</p>
-        </div>
-        <div className="quick-actions-bar">
-
-          <button className="action-btn primary" onClick={() => navigate('/pedidos')}>
-            <Plus size={18} /> Nuevo Pedido
-          </button>
         </div>
       </div>
 
@@ -135,36 +131,41 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card glass main-chart">
+      <div className="main-content-row">
+        <div className="dashboard-card glass evolution-chart-section">
           <div className="card-header">
-            <h3>Actividad Semanal</h3>
-            <div className="chart-legend">
+            <div className="header-title-with-icon">
+              <ArrowUpRight className="text-accent" size={20} />
+              <h3>Flujo de Caja Semanal</h3>
+            </div>
+            <div className="chart-legend-large">
               <span className="legend-item ingresos">Ingresos</span>
               <span className="legend-item egresos">Egresos</span>
             </div>
           </div>
           
-          <div className="chart-container">
+          <div className="main-chart-container">
             {!hasData ? (
-              <div className="no-data-msg">No hay actividad financiera esta semana</div>
+              <div className="no-data-msg">No hay actividad financiera registrada esta semana</div>
             ) : (
-              <div className="bar-chart">
+              <div className="evolution-bars">
                 {chartData.map((d, i) => (
-                  <div key={i} className="bar-group">
-                    <div className="bars">
+                  <div key={i} className="evolution-column">
+                    <div className="evolution-bar-group">
                       <div 
-                        className="bar ingreso" 
+                        className="evo-bar income" 
                         style={{ height: `${(d.ingresos / maxVal) * 100}%` }}
-                        title={`Ingreso: $${d.ingresos}`}
-                      ></div>
+                      >
+                        <div className="evo-tooltip">${formatUSD(d.ingresos)}</div>
+                      </div>
                       <div 
-                        className="bar egreso" 
+                        className="evo-bar expense" 
                         style={{ height: `${(d.egresos / maxVal) * 100}%` }}
-                        title={`Egreso: $${d.egresos}`}
-                      ></div>
+                      >
+                        <div className="evo-tooltip">${formatUSD(d.egresos)}</div>
+                      </div>
                     </div>
-                    <span className="bar-label">{d.day}</span>
+                    <span className="evo-label">{d.day}</span>
                   </div>
                 ))}
               </div>
@@ -172,27 +173,25 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="dashboard-card glass upcoming-orders">
+        <div className="dashboard-card glass upcoming-orders-compact">
           <div className="card-header">
-            <h3>Próximas Entregas</h3>
-            <button className="view-all-btn" onClick={() => navigate('/pedidos')}>Ver todos</button>
+            <h3>Entregas Críticas</h3>
+            <button className="view-all-btn" onClick={() => navigate('/pedidos')}>
+              Ver <ArrowRight size={14} />
+            </button>
           </div>
           
-          <div className="orders-mini-list">
+          <div className="compact-orders-list">
             {upcomingOrders.length === 0 ? (
-              <div className="no-orders-msg">No hay pedidos pendientes de entrega</div>
+              <div className="empty-msg">Sin entregas pendientes</div>
             ) : (
               upcomingOrders.map(order => (
-                <div key={order.id} className="mini-order-card" onClick={() => navigate('/pedidos')}>
-                  <div className="order-status-dot" style={{ backgroundColor: order.status === 'Pendiente' ? '#f59e0b' : '#10b981' }}></div>
-                  <div className="mini-order-info">
-                    <span className="customer-name">{order.customerName || order.customer}</span>
-                    <span className="product-name">{order.productName}</span>
+                <div key={order.id} className="compact-order-item" onClick={() => navigate('/pedidos')}>
+                  <div className="order-info">
+                    <span className="o-client">{order.customerName || order.customer}</span>
+                    <span className="o-date">{new Date(order.deliveryDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
                   </div>
-                  <div className="delivery-date">
-                    <Clock size={12} />
-                    <span>{new Date(order.deliveryDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
-                  </div>
+                  <span className="o-amount">${formatUSD(order.total || 0)}</span>
                 </div>
               ))
             )}
