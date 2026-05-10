@@ -10,11 +10,12 @@ import {
   Users,
   Settings,
   LogOut,
-  ShoppingBag
+  ShoppingBag,
+  X
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -34,7 +35,12 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar glass">
+    <aside className={`sidebar glass ${isOpen ? 'mobile-open' : ''}`}>
+      <div className="sidebar-header-mobile">
+        <button className="mobile-close-btn" onClick={onClose}>
+          <X size={24} />
+        </button>
+      </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
@@ -42,6 +48,7 @@ const Sidebar = () => {
             to={item.path}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title={item.label}
+            onClick={onClose}
           >
             <item.icon size={20} />
             <span className="nav-label">{item.label}</span>

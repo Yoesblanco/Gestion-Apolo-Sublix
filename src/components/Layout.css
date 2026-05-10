@@ -81,6 +81,34 @@
   gap: 1.5rem;
 }
 
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2500;
+  animation: fadeIn 0.3s ease-out;
+}
+
 .search-container {
   position: relative;
 }
@@ -343,6 +371,27 @@
 
 @media (max-width: 768px) {
   .search-bar-mini {
+    display: none;
+  }
+  
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .top-header {
+    padding: 0 1rem;
+  }
+
+  .content-area {
+    padding: 1rem;
+  }
+  
+  .user-profile-premium {
+    padding-left: 0;
+    border-left: none;
+  }
+  
+  .user-info {
     display: none;
   }
 }

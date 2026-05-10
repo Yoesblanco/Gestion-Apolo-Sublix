@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle, Info, AlertCircle, Search, User, Database, ArrowRight, ShoppingBag, X } from 'lucide-react';
+import { CheckCircle, Info, AlertCircle, Search, User, Database, ArrowRight, ShoppingBag, X, Menu } from 'lucide-react';
 import './Layout.css';
 
 const Layout = ({ children }) => {
@@ -13,6 +13,7 @@ const Layout = ({ children }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [results, setResults] = React.useState({ products: [], orders: [], customers: [] });
   const [showResults, setShowResults] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   // Lógica de búsqueda global con protecciones de seguridad
   React.useEffect(() => {
@@ -74,11 +75,18 @@ const Layout = ({ children }) => {
         <div className="blob blob-2"></div>
       </div>
 
-      <Sidebar />
+      {isMobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+
+      <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       
       <main className="main-content">
         <header className="top-header glass">
           <div className="header-left">
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu size={24} />
+            </button>
             <div className="search-container">
               <div className="search-bar-mini glass">
                 <Search size={16} />
