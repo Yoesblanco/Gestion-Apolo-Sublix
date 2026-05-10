@@ -546,105 +546,21 @@
 }
 
 
-/* Responsive visibility helpers */
-.desktop-only {
-  display: table;
-}
-.mobile-only {
-  display: none;
-}
-
 @media (max-width: 900px) {
-  .desktop-only { display: none; }
-  .mobile-only { display: flex; }
+  .sales-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
-/* Sales Cards (Mobile) */
-.sales-cards-mobile {
-  display: none;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sales-card-mobile {
-  padding: 16px;
-  border-radius: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border: 1px solid var(--border);
-}
-
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.tx-date-mobile {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.card-mid {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.tx-concept-mobile {
-  margin: 0;
-  font-weight: 700;
-  font-size: 1rem;
-  flex: 1;
-}
-
-.tx-amount-mobile {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.card-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.tx-method-mobile {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tx-actions-mobile {
-  display: flex;
-  gap: 8px;
-}
-
-.tx-actions-mobile button {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tx-actions-mobile button:hover {
-  background: var(--surface-hover);
-  color: var(--primary);
-  border-color: var(--primary);
+@media (max-width: 600px) {
+  .sales-overview {
+    grid-template-columns: 1fr;
+  }
+  
+  .reporting-form {
+    grid-template-columns: 1fr;
+  }
 }
