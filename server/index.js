@@ -188,81 +188,79 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/data/sync', async (req, res) => {
   try {
     const data = req.body;
-    
-    // Aquí hacemos Upsert a todas las tablas para guardar el estado del frontend
+    // --- PRODUCTOS (Sincronización Total) ---
     if (data.products) {
-      const productIds = data.products.map(p => p.id);
-      await supabase.from('products').delete().not('id', 'in', productIds);
+      await supabase.from('products').delete().neq('id', 0);
       if (data.products.length > 0) {
-        await supabase.from('products').upsert(data.products);
+        await supabase.from('products').insert(data.products);
       }
     }
     
+    // --- CLIENTES (Sincronización Total) ---
     if (data.customers) {
-      const customerIds = data.customers.map(c => c.id);
-      await supabase.from('customers').delete().not('id', 'in', customerIds);
+      await supabase.from('customers').delete().neq('id', 0);
       if (data.customers.length > 0) {
-        await supabase.from('customers').upsert(data.customers);
+        await supabase.from('customers').insert(data.customers);
       }
     }
 
-    if (data.orders && data.orders.length > 0) {
-      const payments = [];
-      const orders = data.orders.map(o => {
-        const { payments: orderPayments, ...orderData } = o;
-        if (orderPayments) {
-          orderPayments.forEach(p => {
-            payments.push({
-              id: Math.round(Number(p.id)),
-              order_id: o.id,
-              amount: p.amount,
-              payment_date: p.date,
-              method: p.method,
-              notes: p.notes,
-              transaction_id: p.transactionId ? Math.round(Number(p.transactionId)) : null
-            });
-          });
-        }
-        return {
-          id: orderData.id,
-          customer_id: orderData.customerId,
-          customer_name: orderData.customer,
-          product_name: orderData.productName,
-          order_date: orderData.date,
-          delivery_date: orderData.deliveryDate,
-          total: orderData.total,
-          status: orderData.status,
-          description: orderData.desc,
-          quantity: orderData.quantity,
-          pending_stock_to_subtract: orderData.pendingStockToSubtract
-        };
-      });
-
-      const orderIds = data.orders.map(o => o.id);
-      await supabase.from('orders').delete().not('id', 'in', orderIds);
-      
-      if (orders.length > 0) {
-        await supabase.from('orders').upsert(orders);
-        
-        if (payments.length > 0) {
-          // Nota: Para pagos es más complejo porque el ID es autogenerado o manejado por el frontend
-          // Por ahora hacemos upsert para mantener integridad
-          await supabase.from('payments').upsert(payments, { onConflict: 'id' });
-        }
-      }
-    }
-
+    // --- TRANACCIONES (Sincronización Total) ---
     if (data.transactions) {
-      const txIds = data.transactions.map(t => t.id);
-      // Eliminar los que ya no están en la lista
-      await supabase.from('transactions').delete().not('id', 'in', txIds);
+      // 1. Borramos todo lo actual para que coincida exactamente con el frontend
+      await supabase.from('transactions').delete().neq('id', 'placeholder_para_borrar_todo');
       
       if (data.transactions.length > 0) {
         const txs = data.transactions.map(t => ({
           id: t.id, date: t.date, amount: t.amount, type: t.type,
           category: t.category, method: t.method, description: t.description, order_id: t.orderId
         }));
-        await supabase.from('transactions').upsert(txs);
+        // 2. Insertamos el estado actual
+        await supabase.from('transactions').insert(txs);
+      }
+    }
+
+    // --- PEDIDOS Y PAGOS (Sincronización Total) ---
+    if (data.orders) {
+      // Por integridad, borramos primero los pagos (que dependen de los pedidos)
+      await supabase.from('payments').delete().neq('id', 0);
+      await supabase.from('orders').delete().neq('id', 'placeholder');
+      
+      if (data.orders.length > 0) {
+        const payments = [];
+        const orders = data.orders.map(o => {
+          const { payments: orderPayments, ...orderData } = o;
+          if (orderPayments) {
+            orderPayments.forEach(p => {
+              payments.push({
+                id: Math.round(Number(p.id)),
+                order_id: o.id,
+                amount: p.amount,
+                payment_date: p.date,
+                method: p.method,
+                notes: p.notes,
+                transaction_id: p.transactionId ? Math.round(Number(p.transactionId)) : null
+              });
+            });
+          }
+          return {
+            id: orderData.id,
+            customer_id: orderData.customerId,
+            customer_name: orderData.customer,
+            product_name: orderData.productName,
+            order_date: orderData.date,
+            delivery_date: orderData.deliveryDate,
+            total: orderData.total,
+            status: orderData.status,
+            description: orderData.desc,
+            quantity: orderData.quantity,
+            pending_stock_to_subtract: orderData.pendingStockToSubtract
+          };
+        });
+
+        await supabase.from('orders').insert(orders);
+        if (payments.length > 0) {
+          await supabase.from('payments').insert(payments);
+        }
       }
     }
 
