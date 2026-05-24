@@ -1,6 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://gestion-apolo-sublix.onrender.com';
+const STORAGE_KEY_USER = 'apolo_user';
+const STORAGE_KEY_USERS = 'apolo_users';
+
+const sanitizeUser = (user) => {
+  if (!user) return null;
+
+  const { password, ...safeUser } = user;
+  return safeUser;
+};
+
+const sanitizeUsers = (users) => {
+  if (!Array.isArray(users)) return [];
+
+  return users.map((user) => sanitizeUser(user)).filter(Boolean);
+};
+
+const persistUsers = (users) => {
+  localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(sanitizeUsers(users)));
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -8,153 +28,169 @@ export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    // Cargar usuario actual
-    const savedUser = localStorage.getItem('apolo_user');
+    const savedUser = localStorage.getItem(STORAGE_KEY_USER);
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        const safeUser = sanitizeUser(parsedUser);
+        if (safeUser) {
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(safeUser));
+          setUser(safeUser);
+        } else {
+          localStorage.removeItem(STORAGE_KEY_USER);
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY_USER);
+      }
     }
 
-    // Cargar lista de usuarios locales (o crear el admin por defecto)
-    const savedUsers = localStorage.getItem('apolo_users');
-    let currentUsers = [];
-    
+    const savedUsers = localStorage.getItem(STORAGE_KEY_USERS);
     if (savedUsers) {
-      currentUsers = JSON.parse(savedUsers);
-      // Forzar actualización de la contraseña del admin por si quedó vieja en caché
-      currentUsers = currentUsers.map(u => 
-        u.username === 'admin' ? { ...u, password: 'admin123' } : u
-      );
-    } else {
-      currentUsers = [
-        { id: '1', username: 'admin', email: 'admin@apolosublix.com', password: 'admin123', name: 'Administrador' }
-      ];
+      try {
+        const parsedUsers = JSON.parse(savedUsers);
+        const safeUsers = sanitizeUsers(parsedUsers);
+        setUsers(safeUsers);
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(safeUsers));
+      } catch {
+        localStorage.removeItem(STORAGE_KEY_USERS);
+        setUsers([]);
+      }
     }
-    
-    setUsers(currentUsers);
-    localStorage.setItem('apolo_users', JSON.stringify(currentUsers));
-    
+
     setLoading(false);
   }, []);
 
   const login = async (identifier, password) => {
-    const idLower = identifier.trim().toLowerCase();
-    
-    // Intentar login local primero
-    const foundUser = users.find(u => 
-      (u.username?.toLowerCase() === idLower || 
-       u.email?.toLowerCase() === idLower || 
-       u.name?.toLowerCase() === idLower) && 
-      u.password === password
-    );
-
-    if (foundUser) {
-      const sessionUser = { ...foundUser };
-      delete sessionUser.password; // No guardar password en sesión
-      localStorage.setItem('apolo_user', JSON.stringify(sessionUser));
-      setUser(sessionUser);
-      return { success: true };
-    }
-
-    // Fallback al backend si existe
     try {
-      const response = await fetch('https://gestion-apolo-sublix.onrender.com/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password })
       });
 
       const data = await response.json();
-      if (response.ok) {
-        localStorage.setItem('apolo_token', data.token);
-        localStorage.setItem('apolo_user', JSON.stringify(data.user));
-        setUser(data.user);
-        return { success: true };
+      if (!response.ok) {
+        return { success: false, message: data.message || 'Usuario o contraseña incorrectos' };
       }
-    } catch (e) { /* Silencio si el servidor no está */ }
 
-    return { success: false, message: 'Usuario o contraseña incorrectos' };
+      const safeUser = sanitizeUser(data.user);
+      if (!safeUser) {
+        return { success: false, message: 'Respuesta inválida del servidor' };
+      }
+
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(safeUser));
+      setUser(safeUser);
+      return { success: true };
+    } catch {
+      return { success: false, message: 'No se pudo conectar con el servidor. Inténtalo más tarde.' };
+    }
   };
 
   const register = async (name, username, email, password) => {
-    // Validar duplicados localmente
-    if (users.some(u => u.username === username)) {
+    if (users.some((user) => user.username === username)) {
       return { success: false, message: 'El nombre de usuario ya está en uso' };
     }
-    if (users.some(u => u.email === email)) {
+
+    if (users.some((user) => user.email === email)) {
       return { success: false, message: 'El correo electrónico ya está registrado' };
     }
 
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      username,
-      email,
-      password
-    };
-
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    localStorage.setItem('apolo_users', JSON.stringify(updatedUsers));
-
-    // Intentar registro en backend si existe
     try {
-      await fetch('https://gestion-apolo-sublix.onrender.com/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify({ name, username, email, password })
       });
-    } catch (e) { /* Silencio */ }
 
-    return { success: true };
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, message: data.message || 'No se pudo registrar el usuario' };
+      }
+
+      const newUser = {
+        id: Date.now().toString(),
+        name,
+        username,
+        email
+      };
+
+      const updatedUsers = [...users, newUser];
+      setUsers(updatedUsers);
+      persistUsers(updatedUsers);
+
+      return { success: true };
+    } catch {
+      return { success: false, message: 'No se pudo conectar con el servidor. Inténtalo más tarde.' };
+    }
   };
 
   const updateProfile = async (updatedData) => {
     if (!user) return { success: false, message: 'No hay sesión activa' };
 
-    // Validar duplicados (excluyendo al usuario actual)
-    if (updatedData.username && users.some(u => u.username === updatedData.username && u.id !== user.id)) {
+    if (updatedData.username && users.some((storedUser) => storedUser.username === updatedData.username && storedUser.id !== user.id)) {
       return { success: false, message: 'El nombre de usuario ya está en uso' };
     }
-    if (updatedData.email && users.some(u => u.email === updatedData.email && u.id !== user.id)) {
+
+    if (updatedData.email && users.some((storedUser) => storedUser.email === updatedData.email && storedUser.id !== user.id)) {
       return { success: false, message: 'El correo electrónico ya está en uso' };
     }
 
-    // Filtrar datos: No actualizar password si viene vacío
     const finalUpdate = { ...updatedData };
     if (!finalUpdate.password) {
       delete finalUpdate.password;
     }
 
-    const updatedUsers = users.map(u => {
-      if (u.id === user.id) {
-        return { ...u, ...finalUpdate };
-      }
-      return u;
-    });
+    const updatedUsers = sanitizeUsers(
+      users.map((storedUser) => {
+        if (storedUser.id === user.id) {
+          return { ...storedUser, ...finalUpdate };
+        }
+
+        return storedUser;
+      })
+    );
 
     setUsers(updatedUsers);
-    localStorage.setItem('apolo_users', JSON.stringify(updatedUsers));
+    persistUsers(updatedUsers);
 
-    const newSessionUser = { ...user, ...finalUpdate };
-    delete newSessionUser.password;
-    localStorage.setItem('apolo_user', JSON.stringify(newSessionUser));
+    const newSessionUser = sanitizeUser({ ...user, ...finalUpdate });
+    if (!newSessionUser) {
+      return { success: false, message: 'No se pudo actualizar el perfil' };
+    }
+
+    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(newSessionUser));
     setUser(newSessionUser);
 
-    // Intentar actualizar en backend
     try {
-      await fetch('https://gestion-apolo-sublix.onrender.com/api/auth/update', {
+      const payload = {
+        id: user.id,
+        ...newSessionUser
+      };
+
+      if (updatedData.password) {
+        payload.password = updatedData.password;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newSessionUser, id: user.id, password: updatedData.password })
+        body: JSON.stringify(payload)
       });
-    } catch (e) { console.error('Error sincronizando con servidor:', e); }
 
-    return { success: true, message: 'Perfil actualizado correctamente' };
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, message: data.message || 'No se pudo actualizar el perfil' };
+      }
+
+      return { success: true, message: 'Perfil actualizado correctamente' };
+    } catch {
+      return { success: false, message: 'No se pudo conectar con el servidor. Inténtalo más tarde.' };
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('apolo_token');
-    localStorage.removeItem('apolo_user');
+    localStorage.removeItem(STORAGE_KEY_USER);
     setUser(null);
   };
 
