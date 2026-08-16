@@ -46,7 +46,7 @@ export async function seedDatabase(): Promise<void> {
 
     logger.info('🌱 Seed completado exitosamente.');
   } catch (error) {
-    logger.error('❌ Error al ejecutar seed:', error);
+    logger.error({ err: error }, '❌ Error al ejecutar seed');
     throw error;
   }
 }

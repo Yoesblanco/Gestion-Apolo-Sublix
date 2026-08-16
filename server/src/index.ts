@@ -42,7 +42,7 @@ async function bootstrap() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
-    logger.error('Error fatal al iniciar la aplicación:', error);
+    logger.error({ err: error }, 'Error fatal al iniciar la aplicación');
     process.exit(1);
   }
 }

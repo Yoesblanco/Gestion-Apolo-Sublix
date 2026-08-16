@@ -13,17 +13,20 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Settings from './pages/Settings';
 
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) return <div className="loading-screen">Cargando...</div>;
   if (!user) return <Login />;
-  
-  return children;
+
+  return <>{children}</>;
 };
 
-function App() {
+export const App: React.FC = () => {
   return (
     <AuthProvider>
       <AppProvider>
@@ -31,26 +34,29 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="*" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/inventario" element={<Inventory />} />
-                    <Route path="/pedidos" element={<Orders />} />
-                    <Route path="/ventas" element={<Sales />} />
-                    <Route path="/por-comprar" element={<ToBuy />} />
-                    <Route path="/clientes" element={<Customers />} />
-                    <Route path="/configuracion" element={<Settings />} />
-                  </Routes>
-                </Layout>
-              </ProtectedRoute>
-            } />
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/inventario" element={<Inventory />} />
+                      <Route path="/pedidos" element={<Orders />} />
+                      <Route path="/ventas" element={<Sales />} />
+                      <Route path="/por-comprar" element={<ToBuy />} />
+                      <Route path="/clientes" element={<Customers />} />
+                      <Route path="/configuracion" element={<Settings />} />
+                    </Routes>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </Router>
       </AppProvider>
     </AuthProvider>
   );
-}
+};
 
 export default App;

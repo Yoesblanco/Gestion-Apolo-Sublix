@@ -3,6 +3,18 @@ services:
     image: postgres:16-alpine
     container_name: apolo_sublix_postgres
     restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=64MB"
+      - "-c"
+      - "work_mem=4MB"
+      - "-c"
+      - "maintenance_work_mem=16MB"
+      - "-c"
+      - "max_connections=50"
+      - "-c"
+      - "effective_cache_size=128MB"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -12,10 +24,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d apolo_sublix"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-apolo_sublix}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 300M
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     build:
@@ -30,11 +55,46 @@ services:
       NODE_ENV: production
       PORT: 5000
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-apolo_sublix}
-      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_change_in_production_2026_sublix}
+      JWT_SECRET: ${JWT_SECRET:-apolo_sublix_jwt_secret_key_production_2026_secure}
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: "*"
     ports:
       - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 300M
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apolo_sublix_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 64M
+        reservations:
+          memory: 16M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:

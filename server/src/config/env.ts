@@ -11,6 +11,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(8, 'JWT_SECRET debe tener al menos 8 caracteres').default('default_apolo_jwt_secret_key_2026_change_in_production'),
   JWT_EXPIRES_IN: z.string().default('24h'),
   CORS_ORIGIN: z.string().default('*'),
+  DATABASE_SSL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

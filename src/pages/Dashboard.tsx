@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { formatUSD } from '../utils/formatters';
@@ -7,16 +8,12 @@ import {
   Users,
   Wallet,
   ShoppingBag,
-  Plus,
-  Clock,
   Calendar,
   ArrowUpRight,
-  ArrowRight
 } from 'lucide-react';
 import './Dashboard.css';
-import { useNavigate } from 'react-router-dom';
 
-const Dashboard = () => {
+export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { salesTotals, products, customers, orders, transactions } = useAppContext();
@@ -32,23 +29,20 @@ const Dashboard = () => {
     { label: 'Balance Total', sub: 'Dinero en caja', value: `$${formatUSD(salesTotals.total)}`, icon: Wallet, color: '#0ea5e9', path: '/ventas' },
     { label: 'Inventario', sub: 'Productos registrados', value: products.length.toString(), icon: Package, color: '#10b981', path: '/inventario' },
     { label: 'Clientes', sub: 'Base de datos', value: customers.length.toString(), icon: Users, color: '#f59e0b', path: '/clientes' },
-    { label: 'Pedidos', sub: 'Pendientes por entregar', value: (orders || []).filter(o => o && (o.status || 'Pendiente') !== 'Entregado').length.toString(), icon: ShoppingBag, color: '#8b5cf6', path: '/pedidos' },
+    { label: 'Pedidos', sub: 'Pendientes por entregar', value: (orders || []).filter((o) => o && (o.status || 'Pendiente') !== 'Entregado').length.toString(), icon: ShoppingBag, color: '#8b5cf6', path: '/pedidos' },
   ];
-
 
   const upcomingOrders = useMemo(() => {
     return (orders || [])
-      .filter(o => o && (o.status || 'Pendiente') !== 'Entregado')
-      .sort((a, b) => new Date(a?.deliveryDate || 0) - new Date(b?.deliveryDate || 0))
+      .filter((o) => o && (o.status || 'Pendiente') !== 'Entregado')
+      .sort((a, b) => new Date(a?.deliveryDate || 0).getTime() - new Date(b?.deliveryDate || 0).getTime())
       .slice(0, 5);
   }, [orders]);
 
-
-
   const chartData = useMemo(() => {
-    const dataMap = {};
+    const dataMap: Record<string, { ingresos: number; egresos: number }> = {};
 
-    const days = [];
+    const days: { key: string; dateObj: Date }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -57,10 +51,10 @@ const Dashboard = () => {
       dataMap[key] = { ingresos: 0, egresos: 0 };
     }
 
-    (transactions || []).forEach(t => {
+    (transactions || []).forEach((t) => {
       if (!t?.date) return;
       try {
-        let dateStr = "";
+        let dateStr = '';
 
         if (typeof t.date === 'string') {
           if (t.date.includes('T')) {
@@ -72,8 +66,8 @@ const Dashboard = () => {
               else dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             }
           }
-        } else if (t.date instanceof Date) {
-          dateStr = t.date.toISOString().split('T')[0];
+        } else if (typeof t.date === 'object' && t.date !== null && 'toISOString' in (t.date as unknown as Record<string, unknown>)) {
+          dateStr = (t.date as unknown as Date).toISOString().split('T')[0];
         }
 
         if (dataMap[dateStr]) {
@@ -81,23 +75,25 @@ const Dashboard = () => {
           if (t.type?.toLowerCase() === 'ingreso') dataMap[dateStr].ingresos += amt;
           else if (t.type?.toLowerCase() === 'egreso') dataMap[dateStr].egresos += amt;
         }
-      } catch (err) { /* Ignorar fallos */ }
+      } catch {
+        /* Ignorar fallos */
+      }
     });
 
-    return days.map(d => ({
+    return days.map((d) => ({
       day: d.dateObj.toLocaleDateString('es-ES', { weekday: 'short' }),
       date: d.dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
       ingresos: dataMap[d.key].ingresos,
-      egresos: dataMap[d.key].egresos
+      egresos: dataMap[d.key].egresos,
     }));
   }, [transactions]);
 
   const maxVal = useMemo(() => {
-    const vals = chartData.map(d => Math.max(d.ingresos, d.egresos));
+    const vals = chartData.map((d) => Math.max(d.ingresos, d.egresos));
     return Math.max(...vals, 10);
   }, [chartData]);
 
-  const hasData = chartData.some(d => d.ingresos > 0 || d.egresos > 0);
+  const hasData = chartData.some((d) => d.ingresos > 0 || d.egresos > 0);
 
   return (
     <div className="dashboard animate-fade-in">
@@ -108,17 +104,15 @@ const Dashboard = () => {
             {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
           </span>
           <h1>{contextLabel}</h1>
-          <p>Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Centro de mando de {user?.businessName || 'Apolo Sublix'}.</p>
+          <p>
+            Bienvenido de nuevo, <span>{user?.name || 'Administrador'}</span>. Centro de mando de Apolo Sublix.
+          </p>
         </div>
       </div>
 
       <div className="stats-grid">
         {stats.map((stat, i) => (
-          <div
-            key={i}
-            className="stat-card glass clickable-card"
-            onClick={() => navigate(stat.path)}
-          >
+          <div key={i} className="stat-card glass clickable-card" onClick={() => navigate(stat.path)}>
             <div className="stat-icon" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
               <stat.icon size={24} />
             </div>
@@ -148,20 +142,13 @@ const Dashboard = () => {
             <div className="no-data-msg">No hay actividad financiera registrada esta semana</div>
           ) : (
             <>
-              {/* Barras */}
               <div className="main-chart-container">
                 <div className="evolution-bars">
                   {chartData.map((d, i) => (
                     <div key={i} className="evolution-column">
                       <div className="evolution-bar-group">
-                        <div
-                          className="evo-bar income"
-                          style={{ height: `${(d.ingresos / maxVal) * 100}%` }}
-                        />
-                        <div
-                          className="evo-bar expense"
-                          style={{ height: `${(d.egresos / maxVal) * 100}%` }}
-                        />
+                        <div className="evo-bar income" style={{ height: `${(d.ingresos / maxVal) * 100}%` }} />
+                        <div className="evo-bar expense" style={{ height: `${(d.egresos / maxVal) * 100}%` }} />
                       </div>
                       <span className="evo-label">{d.date}</span>
                     </div>
@@ -169,7 +156,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Tabla de datos debajo de las barras */}
               <div className="chart-data-table">
                 <div className="chart-table-header">
                   <span>Fecha</span>
@@ -183,12 +169,8 @@ const Dashboard = () => {
                   return (
                     <div key={i} className={`chart-table-row ${hasActivity ? 'has-activity' : 'no-activity'}`}>
                       <span className="col-date">{d.date}</span>
-                      <span className="col-ingreso">
-                        {d.ingresos > 0 ? `+$${formatUSD(d.ingresos)}` : '—'}
-                      </span>
-                      <span className="col-egreso">
-                        {d.egresos > 0 ? `-$${formatUSD(d.egresos)}` : '—'}
-                      </span>
+                      <span className="col-ingreso">{d.ingresos > 0 ? `+$${formatUSD(d.ingresos)}` : '—'}</span>
+                      <span className="col-egreso">{d.egresos > 0 ? `-$${formatUSD(d.egresos)}` : '—'}</span>
                       <span className={`col-balance ${balance >= 0 ? 'positive' : 'negative'}`}>
                         {hasActivity ? `${balance >= 0 ? '+' : ''}$${formatUSD(Math.abs(balance))}` : '—'}
                       </span>
@@ -199,7 +181,6 @@ const Dashboard = () => {
             </>
           )}
         </div>
-
 
         <div className="dashboard-card glass upcoming-orders-compact">
           <div className="card-header">
@@ -213,11 +194,18 @@ const Dashboard = () => {
             {upcomingOrders.length === 0 ? (
               <div className="empty-msg">Sin entregas pendientes</div>
             ) : (
-              upcomingOrders.map(order => (
+              upcomingOrders.map((order) => (
                 <div key={order.id} className="compact-order-item" onClick={() => navigate('/pedidos')}>
                   <div className="order-info">
-                    <span className="o-client">{order.customerName || order.customer}</span>
-                    <span className="o-date">{new Date(order.deliveryDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+                    <span className="o-client">{order.customer}</span>
+                    <span className="o-date">
+                      {order.deliveryDate
+                        ? new Date(order.deliveryDate).toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'short',
+                          })
+                        : 'Sin fecha'}
+                    </span>
                   </div>
                   <span className="o-amount">${formatUSD(order.total || 0)}</span>
                 </div>

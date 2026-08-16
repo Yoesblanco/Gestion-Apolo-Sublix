@@ -5,13 +5,33 @@ import { env } from '../../config/env';
 
 export const errorHandler: ErrorRequestHandler = (
   err: Error | AppError,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
   if (err instanceof AppError) {
     if (!err.isOperational) {
-      logger.error(`[CRITICAL ERROR] ${err.message}`, err.stack);
+      logger.error(
+        {
+          err,
+          path: req.originalUrl,
+          method: req.method,
+          params: req.params,
+          query: req.query,
+          body: req.body,
+        },
+        `[CRITICAL ERROR] ${err.message}`
+      );
+    } else {
+      logger.warn(
+        {
+          statusCode: err.statusCode,
+          message: err.message,
+          path: req.originalUrl,
+          method: req.method,
+        },
+        `[CLIENT ERROR] ${err.message}`
+      );
     }
     res.status(err.statusCode).json({
       success: false,
@@ -20,7 +40,18 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
-  logger.error(`[UNHANDLED ERROR] ${err.message}`, err.stack);
+  logger.error(
+    {
+      err,
+      stack: err.stack,
+      path: req.originalUrl,
+      method: req.method,
+      params: req.params,
+      query: req.query,
+      body: req.body,
+    },
+    `[UNHANDLED ERROR] ${err.message}`
+  );
 
   res.status(500).json({
     success: false,

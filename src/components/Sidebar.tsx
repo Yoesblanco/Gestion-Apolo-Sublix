@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useAppContext } from '../context/AppContext';
 import {
   LayoutDashboard,
   Package,
@@ -11,11 +10,16 @@ import {
   Settings,
   LogOut,
   ShoppingBag,
-  X
+  X,
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = ({ isOpen, onClose }) => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -37,7 +41,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   return (
     <aside className={`sidebar glass ${isOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-header-mobile">
-        <button className="mobile-close-btn" onClick={onClose}>
+        <button className="mobile-close-btn" onClick={onClose} aria-label="Cerrar menú">
           <X size={24} />
         </button>
       </div>

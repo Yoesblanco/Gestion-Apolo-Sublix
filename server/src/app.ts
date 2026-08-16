@@ -1,7 +1,9 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import pinoHttp from 'pino-http';
 import { env } from './config/env';
+import { logger } from './shared/utils/logger';
 import { apiLimiter } from './shared/middlewares/rate-limiter';
 import { errorHandler } from './shared/middlewares/error.middleware';
 
@@ -14,6 +16,7 @@ import { transactionRouter } from './modules/transactions/presentation/transacti
 import { stockHistoryRouter } from './modules/inventory/presentation/stock-history.routes';
 import { toBuyRouter } from './modules/to-buy/presentation/to-buy.routes';
 import { syncRouter } from './modules/sync/presentation/sync.routes';
+import { logsRouter } from './modules/logs/presentation/logs.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -28,6 +31,27 @@ export function createApp(): Express {
   );
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+  // Pino HTTP Request/Response Logger
+  app.use(
+    pinoHttp({
+      logger,
+      autoLogging: {
+        ignore: (req) => req.url === '/health',
+      },
+      customLogLevel: (_req, res, err) => {
+        if (res.statusCode >= 500 || err) return 'error';
+        if (res.statusCode >= 400) return 'warn';
+        return 'info';
+      },
+      customSuccessMessage: (req, res) => {
+        return `[HTTP] ${req.method} ${req.url} -> ${res.statusCode}`;
+      },
+      customErrorMessage: (req, res, err) => {
+        return `[HTTP ERROR] ${req.method} ${req.url} -> ${res.statusCode}: ${err.message}`;
+      },
+    })
+  );
 
   // Global Rate Limiter
   app.use('/api/', apiLimiter);
@@ -46,6 +70,7 @@ export function createApp(): Express {
   app.use('/api/inventory', stockHistoryRouter);
   app.use('/api/to-buy', toBuyRouter);
   app.use('/api/data', syncRouter);
+  app.use('/api/logs', logsRouter);
 
   // Centralized Error Handling Middleware
   app.use(errorHandler);

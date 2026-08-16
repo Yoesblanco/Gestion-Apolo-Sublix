@@ -1,22 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle, Info, AlertCircle, Search, User, Database, ArrowRight, ShoppingBag, X, Menu } from 'lucide-react';
+import { Product, Order, Customer } from '../types';
 import './Layout.css';
 
-const Layout = ({ children }) => {
+interface LayoutProps {
+  children: ReactNode;
+}
+
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { toasts, products, orders, customers } = useAppContext();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [results, setResults] = React.useState({ products: [], orders: [], customers: [] });
-  const [showResults, setShowResults] = React.useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [results, setResults] = useState<{ products: Product[]; orders: Order[]; customers: Customer[] }>({
+    products: [],
+    orders: [],
+    customers: [],
+  });
+  const [showResults, setShowResults] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Lógica de búsqueda global con protecciones de seguridad
-  React.useEffect(() => {
+  useEffect(() => {
     if (!searchTerm || searchTerm.trim().length < 2) {
       setResults({ products: [], orders: [], customers: [] });
       setShowResults(false);
@@ -25,38 +33,39 @@ const Layout = ({ children }) => {
 
     const query = searchTerm.toLowerCase();
 
-    // Protecciones contra datos nulos o indefinidos
     const safeProducts = products || [];
     const safeOrders = orders || [];
     const safeCustomers = customers || [];
 
-    const filteredProducts = safeProducts.filter(item => 
-      item && item.name && item.name.toLowerCase().includes(query)
-    ).slice(0, 3);
+    const filteredProducts = safeProducts
+      .filter((item) => item && item.name && item.name.toLowerCase().includes(query))
+      .slice(0, 3);
 
-    const filteredOrders = safeOrders.filter(order => 
-      order && (
-        (order.customerName && order.customerName.toLowerCase().includes(query)) || 
-        (order.id && order.id.toString().includes(query))
+    const filteredOrders = safeOrders
+      .filter(
+        (order) =>
+          order &&
+          ((order.customer && order.customer.toLowerCase().includes(query)) ||
+            (order.id && order.id.toString().includes(query)))
       )
-    ).slice(0, 3);
+      .slice(0, 3);
 
-    const filteredCustomers = safeCustomers.filter(c => 
-      c && (
-        (c.name && c.name.toLowerCase().includes(query)) || 
-        (c.phone && c.phone.includes(query))
+    const filteredCustomers = safeCustomers
+      .filter(
+        (c) =>
+          c && ((c.name && c.name.toLowerCase().includes(query)) || (c.phone && c.phone.includes(query)))
       )
-    ).slice(0, 3);
+      .slice(0, 3);
 
     setResults({
       products: filteredProducts,
       orders: filteredOrders,
-      customers: filteredCustomers
+      customers: filteredCustomers,
     });
     setShowResults(true);
   }, [searchTerm, products, orders, customers]);
 
-  const handleResultClick = (path) => {
+  const handleResultClick = (path: string) => {
     navigate(path);
     setSearchTerm('');
     setShowResults(false);
@@ -69,7 +78,6 @@ const Layout = ({ children }) => {
 
   return (
     <div className="app-container">
-      {/* Elementos decorativos de fondo */}
       <div className="bg-decoration">
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
@@ -80,25 +88,25 @@ const Layout = ({ children }) => {
       )}
 
       <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-      
+
       <main className="main-content">
         <header className="top-header glass">
           <div className="header-left">
-            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menú">
               <Menu size={24} />
             </button>
             <div className="search-container">
               <div className="search-bar-mini glass">
                 <Search size={16} />
-                <input 
-                  type="text" 
-                  placeholder="Buscar pedidos, clientes, productos..." 
+                <input
+                  type="text"
+                  placeholder="Buscar pedidos, clientes, productos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onFocus={() => searchTerm.length >= 2 && setShowResults(true)}
                 />
                 {searchTerm && (
-                  <button className="clear-search-btn" onClick={clearSearch}>
+                  <button className="clear-search-btn" onClick={clearSearch} aria-label="Limpiar búsqueda">
                     <X size={14} />
                   </button>
                 )}
@@ -109,9 +117,11 @@ const Layout = ({ children }) => {
                   {results.products.length > 0 && (
                     <div className="search-section">
                       <label>Inventario</label>
-                      {results.products.map(item => (
+                      {results.products.map((item) => (
                         <div key={item.id} className="search-item" onClick={() => handleResultClick('/inventario')}>
-                          <div className="item-icon"><Database size={14} /></div>
+                          <div className="item-icon">
+                            <Database size={14} />
+                          </div>
                           <div className="item-info">
                             <span className="item-title">{item.name}</span>
                             <span className="item-sub">Stock: {item.stock || 0} unidades</span>
@@ -124,11 +134,13 @@ const Layout = ({ children }) => {
                   {results.orders.length > 0 && (
                     <div className="search-section">
                       <label>Pedidos</label>
-                      {results.orders.map(order => (
+                      {results.orders.map((order) => (
                         <div key={order.id} className="search-item" onClick={() => handleResultClick('/pedidos')}>
-                          <div className="item-icon"><ArrowRight size={14} /></div>
+                          <div className="item-icon">
+                            <ArrowRight size={14} />
+                          </div>
                           <div className="item-info">
-                            <span className="item-title">Pedido de {order.customerName}</span>
+                            <span className="item-title">Pedido de {order.customer}</span>
                             <span className="item-sub">ID: #{order.id}</span>
                           </div>
                         </div>
@@ -139,15 +151,18 @@ const Layout = ({ children }) => {
                   {results.customers.length > 0 && (
                     <div className="search-section">
                       <label>Clientes</label>
-                      {results.customers.map(c => {
-                        const activeOrder = orders.find(o => 
-                          (o.customerId === c.id || o.customer === c.name) && 
-                          (o.status === 'Pendiente' || o.status === 'En Proceso')
+                      {results.customers.map((c) => {
+                        const activeOrder = orders.find(
+                          (o) =>
+                            (o.customerId === c.id || o.customer === c.name) &&
+                            (o.status === 'Pendiente' || o.status === 'En Proceso')
                         );
                         return (
                           <div key={c.id} className="search-item-multi">
                             <div className="search-item" onClick={() => handleResultClick('/clientes')}>
-                              <div className="item-icon"><User size={14} /></div>
+                              <div className="item-icon">
+                                <User size={14} />
+                              </div>
                               <div className="item-info">
                                 <span className="item-title">{c.name}</span>
                                 <span className="item-sub">{c.phone || 'Sin teléfono'}</span>
@@ -165,7 +180,7 @@ const Layout = ({ children }) => {
                     </div>
                   )}
 
-                  {Object.values(results).every(arr => arr.length === 0) && (
+                  {Object.values(results).every((arr) => arr.length === 0) && (
                     <div className="no-results">No se encontraron coincidencias</div>
                   )}
                 </div>
@@ -178,26 +193,21 @@ const Layout = ({ children }) => {
               <div className="status-dot pulse-green"></div>
               <span>Sistema Online</span>
             </div>
-            
+
             <div className="user-profile-premium">
               <div className="user-info">
                 <span className="user-name">{user?.name || 'Administrador'}</span>
                 <span className="user-role">{user?.role || 'Gestor Principal'}</span>
               </div>
-              <div className="user-avatar">
-                {user?.name ? user.name.charAt(0) : <User size={18} />}
-              </div>
+              <div className="user-avatar">{user?.name ? user.name.charAt(0) : <User size={18} />}</div>
             </div>
           </div>
         </header>
 
-        <div className="content-area">
-          {children}
-        </div>
+        <div className="content-area">{children}</div>
 
-        {/* Custom Toast System */}
         <div className="toast-container">
-          {toasts.map(toast => (
+          {toasts.map((toast) => (
             <div key={toast.id} className={`toast-item glass animate-slide-up ${toast.type}`}>
               {toast.type === 'success' && <CheckCircle size={18} className="text-accent" />}
               {toast.type === 'error' && <AlertCircle size={18} className="text-danger" />}
