@@ -11,7 +11,7 @@ echo.
 set BASE_DIR=%~dp0
 
 echo [1/3] Iniciando Servidor de Datos (Backend)...
-start "Backend - Apolo Sublix" /min cmd /c "cd /d %BASE_DIR%server && node index.js"
+start "Backend - Apolo Sublix" /min cmd /c "cd /d %BASE_DIR%server && npm start"
 
 echo [2/3] Iniciando Interfaz de Usuario (Frontend)...
 start "Frontend - Apolo Sublix" /min cmd /c "cd /d %BASE_DIR% && npm run dev"

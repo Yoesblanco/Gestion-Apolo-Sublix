@@ -36,6 +36,8 @@ const saveToStorage = (data) => {
   }
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://gestion-apolo-sublix.onrender.com';
+
 export const AppProvider = ({ children }) => {
   const storedData = useMemo(() => loadFromStorage(), []);
   
@@ -80,7 +82,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('https://gestion-apolo-sublix.onrender.com/api/data');
+        const res = await fetch(`${API_BASE_URL}/api/data`);
         if (!res.ok) throw new Error('Error al conectar con el servidor');
         const data = await res.json();
         
@@ -150,7 +152,7 @@ export const AppProvider = ({ children }) => {
     
     syncTimestamp.current = Date.now();
     
-    fetch('https://gestion-apolo-sublix.onrender.com/api/data/sync', {
+    fetch(`${API_BASE_URL}/api/data/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
