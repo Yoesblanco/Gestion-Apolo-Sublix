@@ -6,6 +6,28 @@ export interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
 }
 
+function resolveApiUrl(endpoint: string): string {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+
+  let base = (API_BASE_URL || '').trim();
+  if (!base) return endpoint;
+
+  if (!base.startsWith('http://') && !base.startsWith('https://')) {
+    base = `https://${base}`;
+  }
+
+  base = base.replace(/\/+$/, '');
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  if (base.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
+    cleanEndpoint = cleanEndpoint.slice(4);
+  }
+
+  return `${base}${cleanEndpoint}`;
+}
+
 export async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { requiresAuth = true, headers = {}, ...rest } = options;
 
@@ -21,7 +43,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     }
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const url = resolveApiUrl(endpoint);
 
   try {
     const response = await fetch(url, {
