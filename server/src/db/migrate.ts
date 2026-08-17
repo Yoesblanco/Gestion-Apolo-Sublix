@@ -128,6 +128,48 @@ export async function runMigrations() {
         value TEXT NOT NULL,
         updated_at TIMESTAMP DEFAULT NOW()
       );
+
+      -- Auto-reparación / Migración de columnas existentes
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'Administrador';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS cost DOUBLE PRECISION DEFAULT 0;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS min_stock INTEGER DEFAULT 0;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS status VARCHAR(50);
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS address TEXT;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_stock_to_subtract INTEGER DEFAULT 0;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS transaction_id BIGINT;
+      ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS order_id VARCHAR(64);
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE to_buy ADD COLUMN IF NOT EXISTS customer VARCHAR(255);
+      ALTER TABLE to_buy ADD COLUMN IF NOT EXISTS product_id VARCHAR(64);
+      ALTER TABLE to_buy ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE to_buy_history ADD COLUMN IF NOT EXISTS purchase_price DOUBLE PRECISION DEFAULT 0;
+      ALTER TABLE to_buy_history ADD COLUMN IF NOT EXISTS product_id VARCHAR(64);
+      ALTER TABLE to_buy_history ADD COLUMN IF NOT EXISTS transaction_id VARCHAR(64);
+      ALTER TABLE to_buy_history ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE stock_history ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE stock_history ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+      ALTER TABLE meta ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
     `);
     console.log('✅ Esquema verificado y listo.');
   } catch (error) {
