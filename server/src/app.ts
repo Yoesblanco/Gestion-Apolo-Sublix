@@ -22,14 +22,42 @@ import { logsRouter } from './modules/logs/presentation/logs.routes';
 export function createApp(): Express {
   const app = express();
 
+  // Trust proxy para Render / Vercel
+  app.set('trust proxy', 1);
+
+  // CORS Configuration
+  const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+      // Peticiones sin origen (móviles, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const configured = env.CORS_ORIGIN ? env.CORS_ORIGIN.split(',').map((o) => o.trim()) : ['*'];
+      if (
+        configured.includes('*') ||
+        configured.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    optionsSuccessStatus: 200,
+  };
+
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
+
   // Security Middlewares
-  app.use(helmet());
   app.use(
-    cors({
-      origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(',').map((o) => o.trim()),
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
   app.use(express.json({ limit: '15mb' }));
