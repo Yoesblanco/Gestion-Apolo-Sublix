@@ -130,6 +130,7 @@ export async function runMigrations() {
       );
 
       -- Auto-reparación / Migración de columnas existentes
+      ALTER TABLE users ALTER COLUMN id TYPE VARCHAR(64) USING id::VARCHAR(64);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'Administrador';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
