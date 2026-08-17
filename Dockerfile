@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies first for maximum layer cache reuse
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund && npm cache clean --force
 
 # Copy application source and build config
 COPY tsconfig.json vite.config.js index.html ./
@@ -23,7 +23,7 @@ RUN npm run build
 # ===================================================
 # Stage 2: Production Nginx Server (Ultra-lightweight)
 # ===================================================
-FROM nginx:alpine AS runner
+FROM nginx:alpine-slim AS runner
 
 # Remove default nginx config
 RUN rm -rf /etc/nginx/conf.d/*

@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+.env
+.env.*
+*.log
+npm-debug.log*
+build_error.txt
+fix.cjs
+tsconfig.tsbuildinfo
+.continue
+Lanzador_Apolo.bat
+server

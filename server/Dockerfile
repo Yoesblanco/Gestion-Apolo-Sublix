@@ -42,5 +42,9 @@ USER node
 
 EXPOSE 5000
 
+# Healthcheck interno del contenedor
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/health || exit 1
+
 # Parámetro Node para optimizar recolección de basura y consumo de memoria RAM
-CMD ["node", "--max-old-space-size=256", "dist/index.js"]
+CMD ["node", "--max-old-space-size=128", "dist/index.js"]

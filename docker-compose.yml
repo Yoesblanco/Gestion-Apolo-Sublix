@@ -6,15 +6,15 @@ services:
     command:
       - "postgres"
       - "-c"
-      - "shared_buffers=64MB"
+      - "shared_buffers=32MB"
       - "-c"
-      - "work_mem=4MB"
+      - "work_mem=2MB"
       - "-c"
-      - "maintenance_work_mem=16MB"
+      - "maintenance_work_mem=8MB"
       - "-c"
-      - "max_connections=50"
+      - "max_connections=20"
       - "-c"
-      - "effective_cache_size=128MB"
+      - "effective_cache_size=64MB"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -32,15 +32,15 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.75'
-          memory: 300M
+          cpus: '0.50'
+          memory: 150M
         reservations:
-          memory: 64M
+          memory: 32M
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "5m"
+        max-file: "2"
 
   backend:
     build:
@@ -60,18 +60,24 @@ services:
       CORS_ORIGIN: "*"
     ports:
       - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
-          cpus: '0.75'
-          memory: 300M
+          cpus: '0.50'
+          memory: 180M
         reservations:
-          memory: 64M
+          memory: 48M
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "5m"
+        max-file: "2"
 
   frontend:
     build:
@@ -80,21 +86,28 @@ services:
     container_name: apolo_sublix_frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 64M
+          cpus: '0.25'
+          memory: 32M
         reservations:
-          memory: 16M
+          memory: 8M
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "5m"
+        max-file: "2"
 
 volumes:
   postgres_data:
