@@ -40,7 +40,17 @@ export async function seedDatabase(): Promise<void> {
         await db.insert(users).values(u);
         logger.info(`✅ Usuario creado: ${u.username} (${u.role}) - Password: admin123`);
       } else {
-        logger.info(`ℹ️ Usuario ya existente: ${u.username}`);
+        await db
+          .update(users)
+          .set({
+            password: passwordHash,
+            role: u.role,
+            name: u.name,
+            username: u.username,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, existing[0].id));
+        logger.info(`🔄 Clave restablecida y usuario actualizado: ${u.username} (${u.role}) - Password: admin123`);
       }
     }
 
