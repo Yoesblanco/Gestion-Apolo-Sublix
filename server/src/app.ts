@@ -5,6 +5,7 @@ import pinoHttp from 'pino-http';
 import { env } from './config/env';
 import { logger } from './shared/utils/logger';
 import { apiLimiter } from './shared/middlewares/rate-limiter';
+import { pool } from './config/database';
 import { errorHandler } from './shared/middlewares/error.middleware';
 
 // Modular Route Handlers
@@ -56,9 +57,19 @@ export function createApp(): Express {
   // Global Rate Limiter
   app.use('/api/', apiLimiter);
 
-  // Health check endpoint
-  app.get('/health', (_req, res) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  // Health check endpoint (pings DB to keep Supabase & Render active)
+  app.get('/health', async (_req, res) => {
+    try {
+      await pool.query('SELECT 1');
+      res.status(200).json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      res.status(500).json({
+        status: 'degraded',
+        database: 'error',
+        error: err?.message || 'Database ping failed',
+        timestamp: new Date().toISOString(),
+      });
+    }
   });
 
   // API Modules

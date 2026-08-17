@@ -1,0 +1,40 @@
+services:
+  # -------------------------------------------------------------
+  # Servicio Web Backend (API Node.js + Express + TypeScript)
+  # -------------------------------------------------------------
+  - type: web
+    name: apolo-backend
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: RENDER_EXTERNAL_URL
+        fromService:
+          type: web
+          name: apolo-backend
+          property: host
+
+  # -------------------------------------------------------------
+  # (Opcional) Cron Job nativo de Render para ejecutar ping
+  # -------------------------------------------------------------
+  - type: cron
+    name: apolo-keepalive-cron
+    runtime: node
+    plan: free
+    rootDir: server
+    schedule: "*/9 * * * *"
+    startCommand: "curl -s -f https://apolo-backend.onrender.com/health || true"

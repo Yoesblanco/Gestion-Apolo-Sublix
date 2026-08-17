@@ -1,0 +1,38 @@
+name: Keep Render & Supabase Alive
+
+on:
+  schedule:
+    # Runs every 9 minutes
+    - cron: '*/9 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping-services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend & Supabase DB
+        env:
+          RENDER_URL: ${{ secrets.RENDER_HEALTH_URL || 'https://tu-app.onrender.com/health' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_REST_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          echo "=========================================="
+          echo " [1/2] Pinging Render (/health)..."
+          echo "=========================================="
+          RENDER_RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "$RENDER_URL" || echo "FAILED")
+          echo "Response: $RENDER_RESP"
+
+          if [ -n "$SUPABASE_URL" ]; then
+            echo ""
+            echo "=========================================="
+            echo " [2/2] Pinging Supabase REST API..."
+            echo "=========================================="
+            SUPABASE_RESP=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY" \
+              "$SUPABASE_URL/rest/v1/" || echo "FAILED")
+            echo "Response: $SUPABASE_RESP"
+          else
+            echo ""
+            echo "Note: SUPABASE_REST_URL secret is optional since Render /health already queries Supabase DB directly."
+          fi

@@ -3,6 +3,7 @@ import { env } from './config/env';
 import { pool } from './config/database';
 import { runMigrations } from './db/migrate';
 import { seedDatabase } from './db/seed';
+import { startKeepAlive } from './shared/utils/keep-alive';
 import { logger } from './shared/utils/logger';
 
 async function bootstrap() {
@@ -16,10 +17,12 @@ async function bootstrap() {
     // 3. Initialize Express application
     const app = createApp();
 
-    // 3. Start HTTP server
+    // 4. Start HTTP server
     const server = app.listen(env.PORT, '0.0.0.0', () => {
       logger.info(`🚀 Servidor Apolo Sublix TypeScript corriendo en http://0.0.0.0:${env.PORT}`);
       logger.info(`🌐 Modo: ${env.NODE_ENV}`);
+      // Iniciar el ciclo keep-alive automático cada 9 minutos
+      startKeepAlive();
     });
 
     // Graceful Shutdown handlers
